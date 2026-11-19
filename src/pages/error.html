@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="pl" data-theme="alpine-dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,13 +9,33 @@
   />
   <title>Nie można otworzyć strony</title>
   <style>
+    :root, html[data-theme='alpine-dark'] {
+      color-scheme: dark;
+      --bg: #08101C;
+      --panel: #101B2E;
+      --border: rgba(148, 195, 255, 0.12);
+      --text: #EBF2FC;
+      --muted: #879CB8;
+      --code-bg: #091220;
+      --accent: #3898FF;
+    }
+    html[data-theme='alpine-light'], html[data-theme='alpine-royal'] {
+      color-scheme: light;
+      --bg: #F4F7FB;
+      --panel: #FFFFFF;
+      --border: rgba(22, 35, 54, 0.1);
+      --text: #162336;
+      --muted: #5C708B;
+      --code-bg: #F1F5FA;
+      --accent: #0B63E5;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 100%;
       height: 100%;
       font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
-      background: #F4F7FB;
-      color: #162336;
+      background: var(--bg);
+      color: var(--text);
       display: grid;
       place-items: center;
       padding: 24px;
@@ -25,8 +45,8 @@
       max-width: 440px;
       padding: 24px;
       border-radius: 12px;
-      background: #FFFFFF;
-      border: 1px solid rgba(22, 35, 54, 0.1);
+      background: var(--panel);
+      border: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -47,14 +67,14 @@
     }
     .sub {
       font-size: 13px;
-      color: #5C708B;
+      color: var(--muted);
       line-height: 1.5;
       word-break: break-word;
     }
     .code {
       font-size: 11.5px;
-      color: #5C708B;
-      background: #F1F5FA;
+      color: var(--muted);
+      background: var(--code-bg);
       padding: 7px 10px;
       border-radius: 6px;
     }
@@ -67,20 +87,20 @@
       height: 32px;
       padding: 0 14px;
       border-radius: 7px;
-      border: 1px solid rgba(22, 35, 54, 0.12);
+      border: 1px solid var(--border);
       font-family: inherit;
       font-size: 12.5px;
       font-weight: 500;
       cursor: pointer;
     }
     .primary {
-      border-color: #0B63E5;
-      background: #0B63E5;
+      border-color: var(--accent);
+      background: var(--accent);
       color: #FFFFFF;
     }
     .secondary {
       background: transparent;
-      color: #162336;
+      color: var(--text);
     }
   </style>
 </head>
@@ -122,6 +142,19 @@
         window.peakNewTab.navigate('peak://newtab');
       }
     });
+
+    if (window.peakNewTab) {
+      window.peakNewTab.getInitialData().then((data) => {
+        if (data && data.settings && data.settings.theme) {
+          document.documentElement.dataset.theme = data.settings.theme;
+        }
+      }).catch(() => {});
+      window.peakNewTab.onStateUpdate((data) => {
+        if (data && data.settings && data.settings.theme) {
+          document.documentElement.dataset.theme = data.settings.theme;
+        }
+      });
+    }
   </script>
 </body>
 </html>

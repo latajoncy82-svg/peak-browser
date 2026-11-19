@@ -1,5 +1,41 @@
 [
   {
+    "tag": "v1.1.0",
+    "name": "Peak Browser 1.1.0 — Domyślny ciemny interfejs i nowy pasek kart",
+    "publishedAt": "2026-11-19T22:26:00Z",
+    "body": "### Co się zmieniło w wersji 1.1.0\n- **Domyślny ciemny motyw Niebieskiej Góry (`Ciemny`)**: głęboki alpejski granat w całym interfejsie okna, na stronie nowej karty (`peak://newtab`), w oknie podpowiedzi oraz na ekranie błędu.\n- **Dopracowane połączone karty i zmiana kolejności**: płynne wyprofilowane łączenie aktywnej karty z paskiem narzędzi, zwarty górny pasek (`78 px`) oraz przeciąganie kart myszką (`drag & drop`).\n- **Czytelniejszy pasek adresu**: wyróżniona nazwa domeny przy wyciszonym protokole i ścieżce oraz szybki przycisk kopiowania adresu URL po najechaniu myszką.\n- **Odświeżona Nowa Karta i panel boczny**: równomierny rząd skrótów w jednym wierszu, satynowe oszklone karty na nocnej panoramie, smukłe paski przewijania oraz szybkie otwieranie zakładek i historii w nowej karcie.",
+    "htmlUrl": "https://github.com/latajoncy82-svg/peak-browser/releases/tag/v1.1.0",
+    "prerelease": false,
+    "assets": {
+      "installer": {
+        "name": "Peak-Browser-Setup-1.1.0.exe",
+        "size": 122652005,
+        "downloadUrl": "https://github.com/latajoncy82-svg/peak-browser/releases/download/v1.1.0/Peak-Browser-Setup-1.1.0.exe",
+        "downloadCount": 0
+      },
+      "portable": {
+        "name": "Peak-Browser-Portable-1.1.0.exe",
+        "size": 111351142,
+        "downloadUrl": "https://github.com/latajoncy82-svg/peak-browser/releases/download/v1.1.0/Peak-Browser-Portable-1.1.0.exe",
+        "downloadCount": 0
+      },
+      "all": [
+        {
+          "name": "Peak-Browser-Setup-1.1.0.exe",
+          "size": 122652005,
+          "downloadUrl": "https://github.com/latajoncy82-svg/peak-browser/releases/download/v1.1.0/Peak-Browser-Setup-1.1.0.exe",
+          "downloadCount": 0
+        },
+        {
+          "name": "Peak-Browser-Portable-1.1.0.exe",
+          "size": 111351142,
+          "downloadUrl": "https://github.com/latajoncy82-svg/peak-browser/releases/download/v1.1.0/Peak-Browser-Portable-1.1.0.exe",
+          "downloadCount": 0
+        }
+      ]
+    }
+  },
+  {
     "tag": "v1.0.1",
     "name": "Peak Browser 1.0.1 — Poprawka paska zadań",
     "publishedAt": "2026-11-19T22:06:00Z",

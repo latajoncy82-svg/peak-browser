@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pl" data-theme="alpine-light">
+<html lang="pl" data-theme="alpine-dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,7 +13,7 @@
 <body>
   <div id="chrome-shell">
     <header id="chrome-top">
-      <!-- Connected Tab Bar (38px) -->
+      <!-- Connected Tab Bar (36px) -->
       <div id="tabbar">
         <div class="tabbar-left">
           <button id="brand-home" class="brand-btn" title="Peak Browser — Nowa karta">
@@ -86,15 +86,28 @@
               </svg>
             </span>
 
-            <input
-              id="omnibox-input"
-              class="omnibox-input"
-              type="text"
-              spellcheck="false"
-              autocomplete="off"
-              placeholder="Szukaj lub wpisz adres"
-              aria-label="Pasek adresu"
-            />
+            <div class="omnibox-input-stack">
+              <div id="omnibox-display" class="omnibox-display hidden" aria-hidden="true"></div>
+              <input
+                id="omnibox-input"
+                class="omnibox-input"
+                type="text"
+                spellcheck="false"
+                autocomplete="off"
+                placeholder="Szukaj lub wpisz adres"
+                aria-label="Pasek adresu"
+              />
+            </div>
+
+            <button id="btn-copy-url" class="omnibox-action-btn copy-url-btn hidden" title="Kopiuj adres" aria-label="Kopiuj adres">
+              <svg id="copy-icon-default" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5.5" y="5.5" width="7.5" height="8" rx="1.4" />
+                <path d="M10.5 5.5V4a1.4 1.4 0 0 0-1.4-1.4H4.4A1.4 1.4 0 0 0 3 4v6.1a1.4 1.4 0 0 0 1.4 1.4h1.1" />
+              </svg>
+              <svg id="copy-icon-done" class="hidden" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3.5 8.5l3 3 6-6.5" />
+              </svg>
+            </button>
 
             <button id="btn-zoom-pill" class="zoom-pill hidden" title="Resetuj powiększenie (Ctrl+0)">100%</button>
 
@@ -160,7 +173,7 @@
       </div>
     </header>
 
-    <!-- Native Flat Side Drawer (320px) -->
+    <!-- Native Flat Side Drawer (324px) -->
     <aside id="drawer" class="drawer hidden" aria-label="Panel boczny">
       <div class="drawer-header">
         <div class="drawer-tabs" role="tablist">
@@ -208,17 +221,17 @@
           <div class="settings-group">
             <h3 class="settings-heading">Wygląd</h3>
             <div class="theme-segmented" role="group" aria-label="Motyw">
-              <button class="theme-choice" data-theme-choice="alpine-light">
-                <span class="theme-dot dot-light"></span>
-                <span>Jasny</span>
+              <button class="theme-choice" data-theme-choice="alpine-dark">
+                <span class="theme-dot dot-dark"></span>
+                <span>Ciemny</span>
               </button>
               <button class="theme-choice" data-theme-choice="alpine-royal">
                 <span class="theme-dot dot-royal"></span>
                 <span>Niebieski</span>
               </button>
-              <button class="theme-choice" data-theme-choice="alpine-dark">
-                <span class="theme-dot dot-dark"></span>
-                <span>Ciemny</span>
+              <button class="theme-choice" data-theme-choice="alpine-light">
+                <span class="theme-dot dot-light"></span>
+                <span>Jasny</span>
               </button>
             </div>
             <label class="toggle-row">
@@ -260,7 +273,7 @@
 
           <div class="about-footer">
             <img src="../../assets/icon-64.png" alt="Peak Browser" class="about-mini-icon" />
-            <span>Peak Browser 1.0.1</span>
+            <span>Peak Browser 1.1.0</span>
           </div>
         </section>
       </div>

@@ -1,4 +1,6 @@
-### Co się zmieniło w wersji 1.0.1
+### Co się zmieniło w wersji 1.1.0
 
-- **Poprawka przypinania do paska zadań Windows**: dodano jawne metadane aplikacji (`setAppDetails` / `AppUserModelID`, `relaunchCommand`, `appIconPath`, `relaunchDisplayName`), dzięki czemu przypięcie **Peak Browser** do paska zadań zachowuje logo Niebieskiej Góry oraz nazwę aplikacji zamiast przełączać się na domyślną ikonę Electrona.
-- **Bezpośrednie uruchamianie**: skrót uruchamiający oraz `start-peak.bat` uruchamiają bezpośrednio skompilowany plik `Peak Browser.exe`.
+- **Domyślny ciemny motyw Niebieskiej Góry (`Ciemny`)**: głęboki alpejski granat w całym interfejsie okna, na stronie nowej karty (`peak://newtab`), w oknie podpowiedzi oraz na ekranie błędu.
+- **Dopracowane połączone karty i zmiana kolejności**: płynne wyprofilowane łączenie aktywnej karty z paskiem narzędzi, zwarty górny pasek (`78 px`) oraz przeciąganie kart myszką (`drag & drop`).
+- **Czytelniejszy pasek adresu**: wyróżniona nazwa domeny przy wyciszonym protokole i ścieżce oraz szybki przycisk kopiowania adresu URL po najechaniu myszką.
+- **Odświeżona Nowa Karta i panel boczny**: równomierny rząd skrótów w jednym wierszu, satynowe oszklone karty na nocnej panoramie, smukłe paski przewijania oraz szybkie otwieranie zakładek i historii w nowej karcie.

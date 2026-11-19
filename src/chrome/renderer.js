@@ -3,7 +3,7 @@
     tabs: [],
     activeTabId: null,
     settings: {
-      theme: 'alpine-light',
+      theme: 'alpine-dark',
       searchEngine: 'google',
       shieldEnabled: true,
       showBookmarksBar: false
@@ -20,6 +20,8 @@
   };
 
   let omniboxBlurTimer = null;
+  let copyTimer = null;
+  let draggedTabId = null;
 
   const el = {
     tabbar: document.getElementById('tabbar'),
@@ -37,11 +39,15 @@
     reloadIcon: document.getElementById('reload-icon'),
 
     omnibox: document.getElementById('omnibox'),
+    omniboxDisplay: document.getElementById('omnibox-display'),
     omniboxInput: document.getElementById('omnibox-input'),
     omniboxSecurity: document.getElementById('omnibox-security'),
     secPeak: document.getElementById('security-icon-peak'),
     secLock: document.getElementById('security-icon-lock'),
     secWarn: document.getElementById('security-icon-warn'),
+    btnCopyUrl: document.getElementById('btn-copy-url'),
+    copyIconDefault: document.getElementById('copy-icon-default'),
+    copyIconDone: document.getElementById('copy-icon-done'),
     btnZoomPill: document.getElementById('btn-zoom-pill'),
     btnBookmark: document.getElementById('btn-bookmark'),
 
@@ -112,32 +118,76 @@
     return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
   }
 
+  function renderFormattedOmnibox(displayUrl) {
+    if (!displayUrl || (!displayUrl.startsWith('https://') && !displayUrl.startsWith('http://'))) {
+      el.omnibox.classList.remove('has-formatted');
+      el.omniboxDisplay.classList.add('hidden');
+      el.omniboxDisplay.replaceChildren();
+      return;
+    }
+
+    try {
+      const parsed = new URL(displayUrl);
+      const protoSpan = document.createElement('span');
+      protoSpan.className = 'url-proto';
+      protoSpan.textContent = `${parsed.protocol}//`;
+
+      const hostSpan = document.createElement('span');
+      hostSpan.className = 'url-host';
+      hostSpan.textContent = parsed.host;
+
+      const rest = `${parsed.pathname === '/' && !parsed.search && !parsed.hash ? '' : parsed.pathname}${parsed.search}${parsed.hash}`;
+      el.omniboxDisplay.replaceChildren(protoSpan, hostSpan);
+      if (rest) {
+        const pathSpan = document.createElement('span');
+        pathSpan.className = 'url-path';
+        pathSpan.textContent = rest;
+        el.omniboxDisplay.appendChild(pathSpan);
+      }
+
+      el.omniboxDisplay.classList.remove('hidden');
+      el.omnibox.classList.add('has-formatted');
+    } catch {
+      el.omnibox.classList.remove('has-formatted');
+      el.omniboxDisplay.classList.add('hidden');
+      el.omniboxDisplay.replaceChildren();
+    }
+  }
+
   function syncLayout() {
     const showBookmarks = Boolean(state.settings.showBookmarksBar);
     el.bookmarksBar.classList.toggle('hidden', !showBookmarks);
     el.findBar.classList.toggle('hidden', !state.findOpen);
     el.drawer.classList.toggle('hidden', !state.drawerPanel);
 
-    const topHeight = 38 + 42 + (showBookmarks ? 32 : 0) + (state.findOpen ? 38 : 0);
-    const rightPanelWidth = state.drawerPanel ? 320 : 0;
+    const topHeight = 36 + 42 + (showBookmarks ? 32 : 0) + (state.findOpen ? 38 : 0);
+    const rightPanelWidth = state.drawerPanel ? 324 : 0;
 
     document.documentElement.style.setProperty('--top-height', `${topHeight}px`);
     window.peak.setLayout({ topHeight, rightPanelWidth });
   }
 
   function applyTheme(theme) {
-    document.documentElement.dataset.theme = theme || 'alpine-light';
+    document.documentElement.dataset.theme = theme || 'alpine-dark';
     for (const choice of el.themeChoices) {
       choice.classList.toggle('active', choice.dataset.themeChoice === theme);
     }
   }
 
+  function clearTabDragIndicators() {
+    for (const node of el.tabsStrip.querySelectorAll('.tab')) {
+      node.classList.remove('drag-over-before', 'drag-over-after');
+    }
+  }
+
   function renderTabs() {
     const fragment = document.createDocumentFragment();
-    for (const tab of state.tabs) {
+    state.tabs.forEach((tab, index) => {
       const btn = document.createElement('div');
       btn.className = `tab${tab.id === state.activeTabId ? ' active' : ''}`;
       btn.setAttribute('role', 'tab');
+      btn.draggable = true;
+      btn.dataset.tabId = tab.id;
       btn.title = tab.title || 'Nowa karta';
 
       btn.addEventListener('click', (e) => {
@@ -149,6 +199,41 @@
           e.preventDefault();
           window.peak.closeTab(tab.id);
         }
+      });
+
+      btn.addEventListener('dragstart', (e) => {
+        draggedTabId = tab.id;
+        btn.classList.add('dragging');
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', tab.id);
+        }
+      });
+
+      btn.addEventListener('dragover', (e) => {
+        if (!draggedTabId || draggedTabId === tab.id) return;
+        e.preventDefault();
+        clearTabDragIndicators();
+        const fromIdx = state.tabs.findIndex((t) => t.id === draggedTabId);
+        btn.classList.add(fromIdx < index ? 'drag-over-after' : 'drag-over-before');
+      });
+
+      btn.addEventListener('dragleave', () => {
+        btn.classList.remove('drag-over-before', 'drag-over-after');
+      });
+
+      btn.addEventListener('drop', (e) => {
+        e.preventDefault();
+        clearTabDragIndicators();
+        if (draggedTabId && draggedTabId !== tab.id) {
+          window.peak.reorderTabs(draggedTabId, tab.id);
+        }
+      });
+
+      btn.addEventListener('dragend', () => {
+        draggedTabId = null;
+        btn.classList.remove('dragging');
+        clearTabDragIndicators();
       });
 
       const iconWrap = document.createElement('span');
@@ -210,7 +295,7 @@
       btn.appendChild(closeBtn);
 
       fragment.appendChild(btn);
-    }
+    });
 
     el.tabsStrip.replaceChildren(fragment);
   }
@@ -234,6 +319,7 @@
 
     if (document.activeElement !== el.omniboxInput) {
       el.omniboxInput.value = tab.displayUrl || '';
+      renderFormattedOmnibox(tab.displayUrl || '');
     }
 
     const isPeak = tab.url && tab.url.startsWith('peak://');
@@ -241,6 +327,8 @@
     el.secLock.classList.toggle('hidden', isPeak || !tab.isSecure);
     el.secWarn.classList.toggle('hidden', isPeak || tab.isSecure);
     el.omniboxSecurity.classList.toggle('insecure', !isPeak && !tab.isSecure);
+
+    el.btnCopyUrl.classList.toggle('hidden', isPeak || !tab.displayUrl);
 
     const zoomPct = Math.round((tab.zoomFactor || 1) * 100);
     el.btnZoomPill.classList.toggle('hidden', zoomPct === 100);
@@ -314,13 +402,20 @@
           <div class="list-row-title"></div>
           <div class="list-row-sub"></div>
         </div>
-        <button class="row-delete-btn" title="Usuń zakładkę">✕</button>
+        <div class="row-actions">
+          <button class="row-icon-btn row-open-btn" title="Otwórz w nowej karcie">↗</button>
+          <button class="row-icon-btn row-delete-btn" title="Usuń zakładkę">✕</button>
+        </div>
       `;
       row.querySelector('.list-row-title').textContent = bm.title || formatHost(bm.url);
       row.querySelector('.list-row-sub').textContent = formatHost(bm.url);
       row.addEventListener('click', (e) => {
-        if (e.target.closest('.row-delete-btn')) return;
+        if (e.target.closest('.row-actions')) return;
         window.peak.navigate(bm.url);
+      });
+      row.querySelector('.row-open-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.peak.newTab(bm.url);
       });
       row.querySelector('.row-delete-btn').addEventListener('click', (e) => {
         e.stopPropagation();
@@ -356,10 +451,20 @@
           <div class="list-row-title"></div>
           <div class="list-row-sub"></div>
         </div>
+        <div class="row-actions">
+          <button class="row-icon-btn row-open-btn" title="Otwórz w nowej karcie">↗</button>
+        </div>
       `;
       row.querySelector('.list-row-title').textContent = h.title || formatHost(h.url);
       row.querySelector('.list-row-sub').textContent = `${timeStr} · ${formatHost(h.url)}`;
-      row.addEventListener('click', () => window.peak.navigate(h.url));
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.row-actions')) return;
+        window.peak.navigate(h.url);
+      });
+      row.querySelector('.row-open-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.peak.newTab(h.url);
+      });
       frag.appendChild(row);
     }
     el.historyList.replaceChildren(frag);
@@ -573,6 +678,26 @@
     el.btnZoomPill.addEventListener('click', () => window.peak.zoom('reset'));
     el.btnBookmark.addEventListener('click', () => window.peak.toggleCurrentBookmark());
 
+    el.btnCopyUrl.addEventListener('click', async () => {
+      const tab = getActiveTab();
+      const targetUrl = (tab && tab.displayUrl) || el.omniboxInput.value;
+      if (!targetUrl) return;
+      try {
+        await navigator.clipboard.writeText(targetUrl);
+        el.btnCopyUrl.classList.add('copied');
+        el.copyIconDefault.classList.add('hidden');
+        el.copyIconDone.classList.remove('hidden');
+        if (copyTimer) clearTimeout(copyTimer);
+        copyTimer = setTimeout(() => {
+          el.btnCopyUrl.classList.remove('copied');
+          el.copyIconDone.classList.add('hidden');
+          el.copyIconDefault.classList.remove('hidden');
+        }, 1200);
+      } catch {
+        // Clipboard API may fail if window unfocused
+      }
+    });
+
     el.btnShield.addEventListener('click', () => {
       window.peak.updateSettings({ shieldEnabled: !state.settings.shieldEnabled });
     });
@@ -642,6 +767,7 @@
         const tab = getActiveTab();
         if (tab) {
           el.omniboxInput.value = tab.displayUrl || '';
+          renderFormattedOmnibox(tab.displayUrl || '');
         }
       }, 180);
     });

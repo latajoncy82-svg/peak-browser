@@ -19,8 +19,9 @@ function createDefaultSpeedDial() {
 
 function createDefaultState() {
   return {
+    uiVersion: 2,
     settings: {
-      theme: 'alpine-light',
+      theme: 'alpine-dark',
       searchEngine: 'google',
       shieldEnabled: true,
       showBookmarksBar: false
@@ -48,54 +49,68 @@ class PeakStore {
   init(dataDir) {
     fs.mkdirSync(dataDir, { recursive: true });
     this.filePath = path.join(dataDir, 'peak-state.json');
-    this.state = this._loadFromDisk();
+    const { state, migrated } = this._loadFromDisk();
+    this.state = state;
+    if (migrated) {
+      this._scheduleSave();
+    }
     return this;
   }
 
   _loadFromDisk() {
     const defaults = createDefaultState();
     if (!this.filePath || !fs.existsSync(this.filePath)) {
-      return defaults;
+      return { state: defaults, migrated: false };
     }
     try {
       const raw = fs.readFileSync(this.filePath, 'utf8');
       const parsed = JSON.parse(raw);
       if (!parsed || typeof parsed !== 'object') {
-        return defaults;
+        return { state: defaults, migrated: false };
       }
       const rawSettings = parsed.settings && typeof parsed.settings === 'object' ? parsed.settings : {};
+      const loadedUiVersion = typeof parsed.uiVersion === 'number' ? parsed.uiVersion : 1;
+      let theme = VALID_THEMES.has(rawSettings.theme) ? rawSettings.theme : defaults.settings.theme;
+      let migrated = loadedUiVersion < 2;
+      if (loadedUiVersion < 2 && theme === 'alpine-light') {
+        theme = 'alpine-dark';
+      }
       return {
-        settings: {
-          theme: VALID_THEMES.has(rawSettings.theme) ? rawSettings.theme : defaults.settings.theme,
-          searchEngine: VALID_SEARCH_ENGINES.has(rawSettings.searchEngine)
-            ? rawSettings.searchEngine
-            : defaults.settings.searchEngine,
-          shieldEnabled:
-            typeof rawSettings.shieldEnabled === 'boolean'
-              ? rawSettings.shieldEnabled
-              : defaults.settings.shieldEnabled,
-          showBookmarksBar:
-            typeof rawSettings.showBookmarksBar === 'boolean'
-              ? rawSettings.showBookmarksBar
-              : defaults.settings.showBookmarksBar
-        },
-        bookmarks: Array.isArray(parsed.bookmarks) ? parsed.bookmarks.filter((b) => b && b.url) : [],
-        speedDial: Array.isArray(parsed.speedDial)
-          ? parsed.speedDial.filter((item) => item && item.url)
-          : defaults.speedDial,
-        history: Array.isArray(parsed.history)
-          ? parsed.history.filter((h) => h && h.url).slice(0, MAX_HISTORY)
-          : [],
-        downloads: Array.isArray(parsed.downloads)
-          ? parsed.downloads.filter((d) => d && d.id).slice(0, MAX_DOWNLOADS)
-          : [],
-        shieldTotalBlocked:
-          typeof parsed.shieldTotalBlocked === 'number' && Number.isFinite(parsed.shieldTotalBlocked)
-            ? Math.max(0, Math.floor(parsed.shieldTotalBlocked))
-            : 0
+        migrated,
+        state: {
+          uiVersion: 2,
+          settings: {
+            theme,
+            searchEngine: VALID_SEARCH_ENGINES.has(rawSettings.searchEngine)
+              ? rawSettings.searchEngine
+              : defaults.settings.searchEngine,
+            shieldEnabled:
+              typeof rawSettings.shieldEnabled === 'boolean'
+                ? rawSettings.shieldEnabled
+                : defaults.settings.shieldEnabled,
+            showBookmarksBar:
+              typeof rawSettings.showBookmarksBar === 'boolean'
+                ? rawSettings.showBookmarksBar
+                : defaults.settings.showBookmarksBar
+          },
+          bookmarks: Array.isArray(parsed.bookmarks) ? parsed.bookmarks.filter((b) => b && b.url) : [],
+          speedDial: Array.isArray(parsed.speedDial)
+            ? parsed.speedDial.filter((item) => item && item.url)
+            : defaults.speedDial,
+          history: Array.isArray(parsed.history)
+            ? parsed.history.filter((h) => h && h.url).slice(0, MAX_HISTORY)
+            : [],
+          downloads: Array.isArray(parsed.downloads)
+            ? parsed.downloads.filter((d) => d && d.id).slice(0, MAX_DOWNLOADS)
+            : [],
+          shieldTotalBlocked:
+            typeof parsed.shieldTotalBlocked === 'number' && Number.isFinite(parsed.shieldTotalBlocked)
+              ? Math.max(0, Math.floor(parsed.shieldTotalBlocked))
+              : 0
+        }
       };
     } catch {
-      return defaults;
+      return { state: defaults, migrated: false };
     }
   }
 

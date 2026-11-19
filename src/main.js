@@ -46,9 +46,9 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 const THEME_BG_COLORS = {
-  'alpine-light': '#E3EBF5',
-  'alpine-royal': '#0E3C86',
-  'alpine-dark': '#0B111B'
+  'alpine-dark': '#08101C',
+  'alpine-royal': '#0B3475',
+  'alpine-light': '#DCE6F3'
 };
 
 const SEARCH_ENGINES = {
@@ -71,14 +71,14 @@ const closedTabsStack = [];
 const activeDownloadItems = new Map();
 
 let layoutState = {
-  topHeight: 80,
+  topHeight: 78,
   rightPanelWidth: 0
 };
 let isHtmlFullScreen = false;
 let shieldBroadcastTimer = null;
 
 function getThemeBg(theme) {
-  return THEME_BG_COLORS[theme] || THEME_BG_COLORS['alpine-light'];
+  return THEME_BG_COLORS[theme] || THEME_BG_COLORS['alpine-dark'];
 }
 
 function isPeakPageUrl(rawUrl) {
@@ -1072,6 +1072,15 @@ function registerIpcHandlers() {
     switchTab(tabId);
   });
 
+  ipcMain.handle('tabs:reorder', (_event, { fromId, toId } = {}) => {
+    const fromIdx = tabs.findIndex((t) => t.id === fromId);
+    const toIdx = tabs.findIndex((t) => t.id === toId);
+    if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+    const [moved] = tabs.splice(fromIdx, 1);
+    tabs.splice(toIdx, 0, moved);
+    broadcastTabs();
+  });
+
   ipcMain.handle('tabs:reopen', () => {
     reopenClosedTab();
   });
@@ -1405,14 +1414,14 @@ async function runVerificationSuite(verifyDir) {
   const unitStoreDir = path.join(verifyDir, 'unit-store');
   fs.rmSync(unitStoreDir, { recursive: true, force: true });
   const testStore = new store.PeakStore().init(unitStoreDir);
-  assert.strictEqual(testStore.getSettings().theme, 'alpine-light');
-  testStore.updateSettings({ theme: 'alpine-dark', searchEngine: 'duckduckgo' });
+  assert.strictEqual(testStore.getSettings().theme, 'alpine-dark');
+  testStore.updateSettings({ theme: 'alpine-light', searchEngine: 'duckduckgo' });
   testStore.addBookmark({ title: 'Example', url: 'https://example.com' });
   testStore.recordHistory({ url: 'https://example.com', title: 'Example' });
   testStore.flushSync();
 
   const reloadedStore = new store.PeakStore().init(path.join(verifyDir, 'unit-store'));
-  assert.strictEqual(reloadedStore.getSettings().theme, 'alpine-dark');
+  assert.strictEqual(reloadedStore.getSettings().theme, 'alpine-light');
   assert.strictEqual(reloadedStore.getSettings().searchEngine, 'duckduckgo');
   assert.strictEqual(reloadedStore.isBookmarked('https://example.com'), true);
   assert.strictEqual(reloadedStore.getHistory().length, 1);
@@ -1436,33 +1445,41 @@ async function runVerificationSuite(verifyDir) {
     );
   };
 
-  // Wait for initial newtab load
+  // Wait for initial newtab load (default alpine-dark)
   await new Promise((r) => setTimeout(r, 700));
   const initialTab = getActiveTab();
   await waitForTabLoad(initialTab);
-  await capturePair('1-newtab-light');
+  await capturePair('1-newtab-dark');
 
-  // Open Settings drawer via real chrome button & switch to alpine-dark theme
+  // Open a 2nd tab briefly + Settings drawer so we verify connected tab scoops & dark drawer
+  const secondTab = createTab(NEWTAB_URL, false);
+  await waitForTabLoad(secondTab);
   await mainWindow.webContents.executeJavaScript(`
     (() => {
       document.getElementById('btn-settings').click();
     })();
   `);
-  await new Promise((r) => setTimeout(r, 350));
-  await mainWindow.webContents.executeJavaScript(`
-    (() => {
-      const darkBtn = document.querySelector('[data-theme-choice="alpine-dark"]');
-      if (darkBtn) darkBtn.click();
-    })();
-  `);
-  await new Promise((r) => setTimeout(r, 500));
+  await new Promise((r) => setTimeout(r, 400));
   await capturePair('2-dark-settings');
 
-  // Switch back to alpine-light, close drawer, and navigate to https://example.com
+  // Switch to alpine-light and close drawer
   await mainWindow.webContents.executeJavaScript(`
     (() => {
       const lightBtn = document.querySelector('[data-theme-choice="alpine-light"]');
       if (lightBtn) lightBtn.click();
+      document.getElementById('drawer-close').click();
+    })();
+  `);
+  await new Promise((r) => setTimeout(r, 400));
+  await capturePair('3-newtab-light');
+
+  // Switch back to alpine-dark, close 2nd tab, and navigate to https://example.com
+  closeTab(secondTab.id);
+  await mainWindow.webContents.executeJavaScript(`
+    (() => {
+      document.getElementById('btn-settings').click();
+      const darkBtn = document.querySelector('[data-theme-choice="alpine-dark"]');
+      if (darkBtn) darkBtn.click();
       document.getElementById('drawer-close').click();
     })();
   `);
@@ -1474,15 +1491,17 @@ async function runVerificationSuite(verifyDir) {
   const verifyChromeState = await mainWindow.webContents.executeJavaScript(`
     (() => ({
       omniboxValue: document.getElementById('omnibox-input').value,
+      omniboxDomain: document.getElementById('omnibox-display')?.textContent || '',
       backDisabled: document.getElementById('btn-back').disabled,
       activeTabTitle: document.querySelector('.tab.active .tab-title')?.textContent || ''
     }))();
   `);
   assert.ok(verifyChromeState.omniboxValue.includes('example.com'), 'Omnibox should display example.com');
+  assert.ok(verifyChromeState.omniboxDomain.includes('example.com'), 'Formatted omnibox should display example.com');
   assert.strictEqual(verifyChromeState.backDisabled, false, 'Back button should be enabled after navigating');
   assert.ok(verifyChromeState.activeTabTitle.length > 0, 'Active tab should have a title');
 
-  await capturePair('3-example');
+  await capturePair('4-example');
   fs.writeFileSync(
     path.join(verifyDir, 'summary.json'),
     JSON.stringify({ ok: true, verifyChromeState }, null, 2)

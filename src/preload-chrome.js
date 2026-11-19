@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('peak', {
   newTab: (url) => ipcRenderer.invoke('tabs:new', url),
   closeTab: (tabId) => ipcRenderer.invoke('tabs:close', tabId),
   activateTab: (tabId) => ipcRenderer.invoke('tabs:activate', tabId),
+  reorderTabs: (fromId, toId) => ipcRenderer.invoke('tabs:reorder', { fromId, toId }),
   reopenClosedTab: () => ipcRenderer.invoke('tabs:reopen'),
   toggleMuteTab: (tabId) => ipcRenderer.invoke('tabs:mute-toggle', tabId),
   navigate: (input) => ipcRenderer.invoke('nav:go', input),
