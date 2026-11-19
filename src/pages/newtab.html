@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="alpine-light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self' peak:; img-src 'self' peak: https: data:; style-src 'self' peak:; script-src 'self' peak:;"
+  />
+  <title>Nowa karta</title>
+  <link rel="stylesheet" href="peak://newtab/newtab.css" />
+</head>
+<body>
+  <div class="wallpaper" aria-hidden="true"></div>
+  <div class="wallpaper-scrim" aria-hidden="true"></div>
+
+  <main class="stage">
+    <section class="center-stack">
+      <header class="time-block">
+        <div id="clock" class="clock">00:00</div>
+        <div id="date-line" class="date-line">czwartek, 19 listopada</div>
+      </header>
+
+      <form id="search-form" class="search-bar" autocomplete="off">
+        <svg class="search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="7.2" cy="7.2" r="4.5" />
+          <path d="M10.6 10.6L13.7 13.7" />
+        </svg>
+        <input
+          id="search-input"
+          class="search-input"
+          type="text"
+          placeholder="Szukaj lub wpisz adres"
+          autofocus
+        />
+        <button id="search-submit" type="submit" class="search-submit" title="Przejdź" aria-label="Szukaj">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.5 8h9M9 4.5L12.5 8 9 11.5" />
+          </svg>
+        </button>
+      </form>
+
+      <div id="speed-dial-grid" class="shortcuts-row" aria-label="Skróty"></div>
+    </section>
+  </main>
+
+  <button id="theme-cycle-btn" class="theme-cycle-btn" title="Zmień motyw" aria-label="Zmień motyw">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="8" cy="8" r="3" />
+      <path d="M8 1.8v1.4M8 12.8v1.4M1.8 8h1.4M12.8 8h1.4M3.6 3.6l1 1M11.4 11.4l1 1M12.4 3.6l-1 1M4.6 11.4l-1 1" />
+    </svg>
+  </button>
+
+  <div id="modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <form id="shortcut-form" class="modal-card">
+      <h2 id="modal-title" class="modal-title">Dodaj skrót</h2>
+      <label class="modal-field">
+        <span>Nazwa</span>
+        <input id="shortcut-title" type="text" placeholder="np. Wikipedia" maxlength="32" />
+      </label>
+      <label class="modal-field">
+        <span>Adres URL</span>
+        <input id="shortcut-url" type="text" placeholder="np. pl.wikipedia.org" required />
+      </label>
+      <div class="modal-actions">
+        <button type="button" id="modal-cancel" class="modal-btn secondary">Anuluj</button>
+        <button type="submit" class="modal-btn primary">Dodaj</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="peak://newtab/newtab.js"></script>
+</body>
+</html>

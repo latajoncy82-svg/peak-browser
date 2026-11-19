@@ -1,0 +1,61 @@
+{
+  "name": "peak-browser",
+  "productName": "Peak Browser",
+  "version": "1.0.0",
+  "description": "Czysta, szybka przegladarka z motywem niebieskiej gory",
+  "author": "Peak Browser",
+  "repository": "https://github.com/latajoncy82-svg/peak-browser",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "icons": "python scripts/build-icons.py",
+    "dist": "electron-builder --win",
+    "dist:dir": "electron-builder --win --dir"
+  },
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.peakbrowser.app",
+    "productName": "Peak Browser",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Peak Browser",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "artifactName": "Peak-Browser-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Peak-Browser-Portable-${version}.${ext}"
+    }
+  }
+}

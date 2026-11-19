@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="alpine-light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; img-src 'self' https: http: data:; style-src 'self' 'unsafe-inline'; script-src 'self';"
+  />
+  <title>Peak Browser</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="chrome-shell">
+    <header id="chrome-top">
+      <!-- Connected Tab Bar (38px) -->
+      <div id="tabbar">
+        <div class="tabbar-left">
+          <button id="brand-home" class="brand-btn" title="Peak Browser — Nowa karta">
+            <img src="../../assets/icon-64.png" alt="Peak" class="brand-icon" />
+          </button>
+          <div id="tabs-strip" class="tabs-strip" role="tablist"></div>
+          <button id="btn-new-tab" class="new-tab-btn" title="Nowa karta (Ctrl+T)" aria-label="Nowa karta">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <path d="M8 3.5v9M3.5 8h9" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="tabbar-drag-spacer"></div>
+
+        <div class="window-controls">
+          <button id="win-min" class="win-btn" title="Minimalizuj" aria-label="Minimalizuj">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.05">
+              <path d="M1.5 6h9" />
+            </svg>
+          </button>
+          <button id="win-max" class="win-btn" title="Maksymalizuj" aria-label="Maksymalizuj">
+            <svg id="win-max-icon" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.05">
+              <rect x="2" y="2" width="8" height="8" rx="1" />
+            </svg>
+          </button>
+          <button id="win-close" class="win-btn win-close" title="Zamknij" aria-label="Zamknij">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round">
+              <path d="M2.2 2.2l7.6 7.6M9.8 2.2l-7.6 7.6" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Lean Navigation Toolbar (42px) -->
+      <div id="toolbar">
+        <div class="nav-cluster">
+          <button id="btn-back" class="nav-btn" title="Wstecz (Alt+←)" aria-label="Wstecz" disabled>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.2 3.5L5.7 8l4.5 4.5" />
+            </svg>
+          </button>
+          <button id="btn-forward" class="nav-btn" title="Dalej (Alt+→)" aria-label="Dalej" disabled>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5.8 3.5L10.3 8l-4.5 4.5" />
+            </svg>
+          </button>
+          <button id="btn-reload" class="nav-btn" title="Odśwież (Ctrl+R)" aria-label="Odśwież">
+            <svg id="reload-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 8a5 5 0 1 1-1.35-3.42" />
+              <path d="M13.2 2.8v2.6h-2.6" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="omnibox-wrap">
+          <div id="omnibox" class="omnibox">
+            <span id="omnibox-security" class="omnibox-security" title="Bezpieczne połączenie">
+              <svg id="security-icon-peak" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="7.3" cy="7.3" r="4.3" />
+                <path d="M10.6 10.6l3 3" />
+              </svg>
+              <svg id="security-icon-lock" class="hidden" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3.5" y="7.2" width="9" height="6" rx="1.4" />
+                <path d="M5.5 7.2V5.3a2.5 2.5 0 0 1 5 0v1.9" />
+              </svg>
+              <svg id="security-icon-warn" class="hidden" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="8" cy="8" r="5.5" />
+                <path d="M8 5.2v3.3M8 10.8h.01" />
+              </svg>
+            </span>
+
+            <input
+              id="omnibox-input"
+              class="omnibox-input"
+              type="text"
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="Szukaj lub wpisz adres"
+              aria-label="Pasek adresu"
+            />
+
+            <button id="btn-zoom-pill" class="zoom-pill hidden" title="Resetuj powiększenie (Ctrl+0)">100%</button>
+
+            <button id="btn-bookmark" class="omnibox-action-btn" title="Dodaj do zakładek (Ctrl+D)" aria-label="Zakładka">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linejoin="round">
+                <path d="M8 2.3l1.76 3.58 3.95.57-2.86 2.78.68 3.93L8 11.3l-3.53 1.86.68-3.93-2.86-2.78 3.95-.57L8 2.3z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="action-cluster">
+          <button id="btn-shield" class="nav-btn shield-btn" title="Peak Shield — Ochrona przed trackerami" aria-label="Peak Shield">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 2.2L12.8 4.1v3.6c0 3.1-2 5.2-4.8 6.2-2.8-1-4.8-3.1-4.8-6.2V4.1L8 2.2z" />
+              <path d="M5.8 8.1l1.5 1.5 3-3.1" />
+            </svg>
+            <span id="shield-badge" class="badge hidden">0</span>
+          </button>
+
+          <button id="btn-downloads" class="nav-btn downloads-btn" title="Pobrane (Ctrl+J)" aria-label="Pobrane">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 2.7v7.1M5.2 7.2L8 10l2.8-2.8" />
+              <path d="M3.2 12.2v.9a.7.7 0 0 0 .7.7h8.2a.7.7 0 0 0 .7-.7v-.9" />
+            </svg>
+            <span id="downloads-dot" class="progress-dot hidden"></span>
+          </button>
+
+          <button id="btn-library" class="nav-btn" title="Zakładki i historia (Ctrl+H)" aria-label="Zakładki i historia">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4.3 2.5h7.4a.8.8 0 0 1 .8.8v10.2L8 11l-4.5 2.5V3.3a.8.8 0 0 1 .8-.8z" />
+            </svg>
+          </button>
+
+          <button id="btn-settings" class="nav-btn" title="Ustawienia" aria-label="Ustawienia">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <path d="M3.2 4.6h9.6M3.2 8h9.6M3.2 11.4h9.6" />
+            </svg>
+          </button>
+        </div>
+
+        <div id="loading-bar" class="loading-bar"></div>
+      </div>
+
+      <!-- Optional Bookmarks Bar (32px) -->
+      <div id="bookmarks-bar" class="bookmarks-bar hidden">
+        <div id="bookmarks-bar-list" class="bookmarks-bar-list"></div>
+      </div>
+
+      <!-- Optional Find Bar (38px) -->
+      <div id="find-bar" class="find-bar hidden">
+        <div class="find-inner">
+          <svg class="find-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="7.2" cy="7.2" r="4.3" />
+            <path d="M10.5 10.5L13.4 13.4" />
+          </svg>
+          <input id="find-input" type="text" placeholder="Znajdź na stronie..." autocomplete="off" />
+          <span id="find-count" class="find-count">0/0</span>
+          <button id="find-prev" class="find-btn" title="Poprzedni">↑</button>
+          <button id="find-next" class="find-btn" title="Następny">↓</button>
+          <button id="find-close" class="find-btn" title="Zamknij (Esc)">✕</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Native Flat Side Drawer (320px) -->
+    <aside id="drawer" class="drawer hidden" aria-label="Panel boczny">
+      <div class="drawer-header">
+        <div class="drawer-tabs" role="tablist">
+          <button class="drawer-tab" data-panel="bookmarks">Zakładki</button>
+          <button class="drawer-tab" data-panel="history">Historia</button>
+          <button class="drawer-tab" data-panel="downloads">Pobrane</button>
+          <button class="drawer-tab" data-panel="settings">Ustawienia</button>
+        </div>
+        <button id="drawer-close" class="drawer-close-btn" title="Zamknij panel">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round">
+            <path d="M3 3l8 8M11 3l-8 8" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="drawer-body" class="drawer-body">
+        <section id="panel-bookmarks" class="panel hidden">
+          <div class="panel-top-row">
+            <input id="bookmarks-filter" class="panel-search" type="text" placeholder="Filtruj zakładki..." />
+          </div>
+          <label class="toggle-row compact-row">
+            <span class="toggle-title">Pasek zakładek</span>
+            <input id="toggle-bookmarks-bar-inline" type="checkbox" class="peak-switch" />
+          </label>
+          <div id="bookmarks-list" class="item-list"></div>
+        </section>
+
+        <section id="panel-history" class="panel hidden">
+          <div class="panel-top-row">
+            <input id="history-filter" class="panel-search" type="text" placeholder="Szukaj w historii..." />
+            <button id="btn-clear-history" class="ghost-danger-btn">Wyczyść</button>
+          </div>
+          <div id="history-list" class="item-list"></div>
+        </section>
+
+        <section id="panel-downloads" class="panel hidden">
+          <div class="panel-top-row">
+            <span class="panel-subtitle">Pobrane pliki</span>
+            <button id="btn-clear-downloads" class="ghost-btn">Wyczyść</button>
+          </div>
+          <div id="downloads-list" class="item-list"></div>
+        </section>
+
+        <section id="panel-settings" class="panel hidden">
+          <div class="settings-group">
+            <h3 class="settings-heading">Wygląd</h3>
+            <div class="theme-segmented" role="group" aria-label="Motyw">
+              <button class="theme-choice" data-theme-choice="alpine-light">
+                <span class="theme-dot dot-light"></span>
+                <span>Jasny</span>
+              </button>
+              <button class="theme-choice" data-theme-choice="alpine-royal">
+                <span class="theme-dot dot-royal"></span>
+                <span>Niebieski</span>
+              </button>
+              <button class="theme-choice" data-theme-choice="alpine-dark">
+                <span class="theme-dot dot-dark"></span>
+                <span>Ciemny</span>
+              </button>
+            </div>
+            <label class="toggle-row">
+              <div>
+                <div class="toggle-title">Pasek zakładek</div>
+                <div class="toggle-sub">Skrót Ctrl+Shift+B</div>
+              </div>
+              <input id="toggle-bookmarks-bar" type="checkbox" class="peak-switch" />
+            </label>
+          </div>
+
+          <div class="settings-group">
+            <h3 class="settings-heading">Wyszukiwarka</h3>
+            <select id="select-search-engine" class="peak-select">
+              <option value="google">Google</option>
+              <option value="duckduckgo">DuckDuckGo</option>
+              <option value="bing">Bing</option>
+              <option value="brave">Brave Search</option>
+            </select>
+          </div>
+
+          <div class="settings-group">
+            <h3 class="settings-heading">Prywatność</h3>
+            <label class="toggle-row">
+              <div>
+                <div class="toggle-title">Peak Shield</div>
+                <div class="toggle-sub">Zablokowano łącznie: <span id="settings-shield-total">0</span></div>
+              </div>
+              <input id="toggle-shield" type="checkbox" class="peak-switch" />
+            </label>
+            <button id="btn-clear-browsing-data" class="flat-action-btn">Wyczyść dane przeglądania</button>
+            <div id="clear-data-feedback" class="feedback-text hidden">Dane przeglądania zostały wyczyszczone.</div>
+          </div>
+
+          <div class="settings-group">
+            <h3 class="settings-heading">Narzędzia</h3>
+            <button id="btn-devtools" class="flat-action-btn">Narzędzia deweloperskie (F12)</button>
+          </div>
+
+          <div class="about-footer">
+            <img src="../../assets/icon-64.png" alt="Peak Browser" class="about-mini-icon" />
+            <span>Peak Browser 1.0</span>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </div>
+
+  <script src="./renderer.js"></script>
+</body>
+</html>
