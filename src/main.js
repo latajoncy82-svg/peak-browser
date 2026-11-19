@@ -1308,6 +1308,20 @@ function createMainWindow() {
 
   attachKeyboardInterceptor(mainWindow.webContents);
 
+  if (process.platform === 'win32') {
+    const iconPath = app.isPackaged ? process.execPath : ICON_ICO_PATH;
+    const relaunchCommand = app.isPackaged
+      ? `"${process.execPath}"`
+      : `"${process.execPath}" "${ROOT_DIR}"`;
+    mainWindow.setAppDetails({
+      appId: APP_ID,
+      appIconPath: iconPath,
+      appIconIndex: 0,
+      relaunchCommand,
+      relaunchDisplayName: 'Peak Browser'
+    });
+  }
+
   mainWindow.on('resize', layoutViews);
   mainWindow.on('maximize', () => {
     layoutViews();
