@@ -6,12 +6,15 @@
       theme: 'alpine-dark',
       searchEngine: 'google',
       shieldEnabled: true,
+      shieldLevel: 'aggressive',
+      allowlist: [],
       showBookmarksBar: false
     },
     bookmarks: [],
     history: [],
     downloads: [],
-    shieldStats: { enabled: true, totalBlocked: 0 },
+    shieldStats: { enabled: true, level: 'aggressive', totalBlocked: 0 },
+    shieldInfo: { loaded: true, ruleCount: 0 },
     drawerPanel: null,
     findOpen: false,
     omniboxOpen: false,
@@ -72,11 +75,21 @@
     drawerClose: document.getElementById('drawer-close'),
     drawerTabs: Array.from(document.querySelectorAll('.drawer-tab')),
     panels: {
+      shield: document.getElementById('panel-shield'),
       bookmarks: document.getElementById('panel-bookmarks'),
       history: document.getElementById('panel-history'),
-      downloads: document.getElementById('panel-downloads'),
-      settings: document.getElementById('panel-settings')
+      downloads: document.getElementById('panel-downloads')
     },
+
+    shieldSiteHost: document.getElementById('shield-site-host'),
+    shieldSiteSub: document.getElementById('shield-site-sub'),
+    toggleSiteShield: document.getElementById('toggle-site-shield'),
+    shieldTabCount: document.getElementById('shield-tab-count'),
+    shieldTotalCount: document.getElementById('shield-total-count'),
+    shieldSegBtns: Array.from(document.querySelectorAll('.shield-seg-btn')),
+    shieldRulesBadge: document.getElementById('shield-rules-badge'),
+    shieldDomainsList: document.getElementById('shield-domains-list'),
+    btnOpenFullShield: document.getElementById('btn-open-full-shield'),
 
     bookmarksFilter: document.getElementById('bookmarks-filter'),
     bookmarksList: document.getElementById('bookmarks-list'),
@@ -87,16 +100,7 @@
     btnClearHistory: document.getElementById('btn-clear-history'),
 
     downloadsList: document.getElementById('downloads-list'),
-    btnClearDownloads: document.getElementById('btn-clear-downloads'),
-
-    themeChoices: Array.from(document.querySelectorAll('.theme-choice')),
-    selectSearchEngine: document.getElementById('select-search-engine'),
-    toggleShield: document.getElementById('toggle-shield'),
-    toggleBookmarksBar: document.getElementById('toggle-bookmarks-bar'),
-    settingsShieldTotal: document.getElementById('settings-shield-total'),
-    btnClearBrowsingData: document.getElementById('btn-clear-browsing-data'),
-    btnDevTools: document.getElementById('btn-devtools'),
-    clearDataFeedback: document.getElementById('clear-data-feedback')
+    btnClearDownloads: document.getElementById('btn-clear-downloads')
   };
 
   function getActiveTab() {
@@ -109,6 +113,12 @@
     } catch {
       return rawUrl;
     }
+  }
+
+  function isHostAllowlisted(host) {
+    if (!host) return false;
+    const clean = host.toLowerCase().replace(/^www\./, '');
+    return Array.isArray(state.settings.allowlist) && state.settings.allowlist.includes(clean);
   }
 
   function formatBytes(bytes) {
@@ -169,9 +179,6 @@
 
   function applyTheme(theme) {
     document.documentElement.dataset.theme = theme || 'alpine-dark';
-    for (const choice of el.themeChoices) {
-      choice.classList.toggle('active', choice.dataset.themeChoice === theme);
-    }
   }
 
   function clearTabDragIndicators() {
@@ -242,7 +249,7 @@
         const spin = document.createElement('span');
         spin.className = 'tab-spinner';
         iconWrap.appendChild(spin);
-      } else if (tab.url && tab.url.startsWith('peak://newtab')) {
+      } else if (tab.url && tab.url.startsWith('peak://')) {
         const img = document.createElement('img');
         img.className = 'tab-favicon';
         img.src = '../../assets/icon-64.png';
@@ -338,7 +345,8 @@
     el.btnBookmark.classList.toggle('bookmarked', bookmarked);
     el.btnBookmark.disabled = isPeak;
 
-    const shieldOn = Boolean(state.settings.shieldEnabled);
+    const host = isPeak ? '' : formatHost(tab.url);
+    const shieldOn = Boolean(state.settings.shieldEnabled) && state.settings.shieldLevel !== 'off' && !isHostAllowlisted(host);
     el.btnShield.classList.toggle('shield-off', !shieldOn);
     const blocked = tab.blockedCount || 0;
     el.shieldBadge.classList.toggle('hidden', !shieldOn || blocked === 0);
@@ -346,6 +354,62 @@
 
     const hasActiveDl = state.downloads.some((d) => d.state === 'progressing');
     el.downloadsDot.classList.toggle('hidden', !hasActiveDl);
+  }
+
+  function renderShieldPanel() {
+    const tab = getActiveTab();
+    const isPeak = !tab || !tab.url || tab.url.startsWith('peak://');
+    const host = isPeak ? '' : formatHost(tab.url);
+    const globalEnabled = Boolean(state.settings.shieldEnabled) && state.settings.shieldLevel !== 'off';
+    const siteAllowlisted = !isPeak && isHostAllowlisted(host);
+
+    el.shieldSiteHost.textContent = isPeak ? 'Strona wewnętrzna Peak' : host;
+    if (isPeak) {
+      el.shieldSiteSub.textContent = globalEnabled ? 'Peak Shield gotowy do ochrony' : 'Ochrona wyłączona globalnie';
+      el.toggleSiteShield.disabled = true;
+      el.toggleSiteShield.checked = globalEnabled;
+    } else if (!globalEnabled) {
+      el.shieldSiteSub.textContent = 'Ochrona wyłączona globalnie';
+      el.toggleSiteShield.disabled = true;
+      el.toggleSiteShield.checked = false;
+    } else {
+      el.toggleSiteShield.disabled = false;
+      el.toggleSiteShield.checked = !siteAllowlisted;
+      el.shieldSiteSub.textContent = siteAllowlisted
+        ? 'Wyjątek: ochrona wstrzymana na tej stronie'
+        : `Poziom: ${state.settings.shieldLevel === 'aggressive' ? 'Agresywny' : 'Standardowy'}`;
+    }
+
+    el.shieldTabCount.textContent = String((tab && tab.blockedCount) || 0);
+    el.shieldTotalCount.textContent = Number(state.shieldStats.totalBlocked || 0).toLocaleString('pl-PL');
+
+    const level = globalEnabled ? state.settings.shieldLevel || 'aggressive' : 'off';
+    for (const btn of el.shieldSegBtns) {
+      btn.classList.toggle('active', btn.dataset.shieldLevel === level);
+    }
+
+    const ruleCount = (state.shieldInfo && state.shieldInfo.ruleCount) || 0;
+    el.shieldRulesBadge.textContent = ruleCount > 0 ? `${ruleCount.toLocaleString('pl-PL')} reguł` : '';
+
+    const domains = (tab && Array.isArray(tab.blockedDomains) && tab.blockedDomains) || [];
+    if (domains.length === 0) {
+      el.shieldDomainsList.innerHTML = '<div class="empty-state">Nie zablokowano jeszcze żadnych domen na tej karcie</div>';
+    } else {
+      const frag = document.createDocumentFragment();
+      for (const entry of domains) {
+        const row = document.createElement('div');
+        row.className = 'domain-row';
+        const hostSpan = document.createElement('span');
+        hostSpan.className = 'domain-host';
+        hostSpan.textContent = entry.host;
+        const countSpan = document.createElement('span');
+        countSpan.className = 'domain-count';
+        countSpan.textContent = String(entry.count);
+        row.append(hostSpan, countSpan);
+        frag.appendChild(row);
+      }
+      el.shieldDomainsList.replaceChildren(frag);
+    }
   }
 
   function renderBookmarksBar() {
@@ -534,14 +598,6 @@
     el.downloadsList.replaceChildren(frag);
   }
 
-  function renderSettingsPanel() {
-    applyTheme(state.settings.theme);
-    el.selectSearchEngine.value = state.settings.searchEngine || 'google';
-    el.toggleShield.checked = Boolean(state.settings.shieldEnabled);
-    el.toggleBookmarksBar.checked = Boolean(state.settings.showBookmarksBar);
-    el.settingsShieldTotal.textContent = String(state.shieldStats.totalBlocked || 0);
-  }
-
   function renderDrawer() {
     for (const tabBtn of el.drawerTabs) {
       tabBtn.classList.toggle('active', tabBtn.dataset.panel === state.drawerPanel);
@@ -549,17 +605,17 @@
     for (const [name, panelEl] of Object.entries(el.panels)) {
       panelEl.classList.toggle('hidden', name !== state.drawerPanel);
     }
+    el.btnShield.classList.toggle('active', state.drawerPanel === 'shield');
     el.btnDownloads.classList.toggle('active', state.drawerPanel === 'downloads');
     el.btnLibrary.classList.toggle(
       'active',
       state.drawerPanel === 'bookmarks' || state.drawerPanel === 'history'
     );
-    el.btnSettings.classList.toggle('active', state.drawerPanel === 'settings');
 
-    if (state.drawerPanel === 'bookmarks') renderBookmarksPanel();
+    if (state.drawerPanel === 'shield') renderShieldPanel();
+    else if (state.drawerPanel === 'bookmarks') renderBookmarksPanel();
     else if (state.drawerPanel === 'history') renderHistoryPanel();
     else if (state.drawerPanel === 'downloads') renderDownloadsPanel();
-    else if (state.drawerPanel === 'settings') renderSettingsPanel();
   }
 
   function openDrawer(panelName) {
@@ -694,16 +750,21 @@
           el.copyIconDefault.classList.remove('hidden');
         }, 1200);
       } catch {
-        // Clipboard API may fail if window unfocused
+        // Ignore clipboard failure
       }
     });
 
-    el.btnShield.addEventListener('click', () => {
-      window.peak.updateSettings({ shieldEnabled: !state.settings.shieldEnabled });
-    });
+    el.btnShield.addEventListener('click', () => openDrawer('shield'));
     el.btnDownloads.addEventListener('click', () => openDrawer('downloads'));
     el.btnLibrary.addEventListener('click', () => openDrawer('bookmarks'));
-    el.btnSettings.addEventListener('click', () => openDrawer('settings'));
+    el.btnSettings.addEventListener('click', () => {
+      if (state.drawerPanel) {
+        state.drawerPanel = null;
+        renderDrawer();
+        syncLayout();
+      }
+      window.peak.openSettings('');
+    });
     el.drawerClose.addEventListener('click', () => {
       state.drawerPanel = null;
       renderDrawer();
@@ -717,6 +778,28 @@
       });
     }
 
+    el.toggleSiteShield.addEventListener('change', () => {
+      const tab = getActiveTab();
+      if (!tab || !tab.url || tab.url.startsWith('peak://')) return;
+      const host = formatHost(tab.url);
+      if (host) {
+        window.peak.toggleSiteShield(host);
+      }
+    });
+
+    for (const btn of el.shieldSegBtns) {
+      btn.addEventListener('click', () => {
+        window.peak.updateSettings({ shieldLevel: btn.dataset.shieldLevel });
+      });
+    }
+
+    el.btnOpenFullShield.addEventListener('click', () => {
+      state.drawerPanel = null;
+      renderDrawer();
+      syncLayout();
+      window.peak.openSettings('#ochrona');
+    });
+
     el.bookmarksFilter.addEventListener('input', renderBookmarksPanel);
     el.historyFilter.addEventListener('input', renderHistoryPanel);
     el.btnClearHistory.addEventListener('click', () => window.peak.clearHistory());
@@ -725,28 +808,6 @@
     el.toggleBookmarksBarInline.addEventListener('change', (e) => {
       window.peak.updateSettings({ showBookmarksBar: e.target.checked });
     });
-    el.toggleBookmarksBar.addEventListener('change', (e) => {
-      window.peak.updateSettings({ showBookmarksBar: e.target.checked });
-    });
-    el.toggleShield.addEventListener('change', (e) => {
-      window.peak.updateSettings({ shieldEnabled: e.target.checked });
-    });
-    el.selectSearchEngine.addEventListener('change', (e) => {
-      window.peak.updateSettings({ searchEngine: e.target.value });
-    });
-
-    for (const choice of el.themeChoices) {
-      choice.addEventListener('click', () => {
-        window.peak.updateSettings({ theme: choice.dataset.themeChoice });
-      });
-    }
-
-    el.btnClearBrowsingData.addEventListener('click', async () => {
-      await window.peak.clearBrowsingData();
-      el.clearDataFeedback.classList.remove('hidden');
-      setTimeout(() => el.clearDataFeedback.classList.add('hidden'), 2600);
-    });
-    el.btnDevTools.addEventListener('click', () => window.peak.toggleDevTools());
 
     // Omnibox
     el.omniboxInput.addEventListener('focus', () => {
@@ -834,6 +895,9 @@
       state.activeTabId = activeTabId;
       renderTabs();
       renderToolbar();
+      if (state.drawerPanel === 'shield') {
+        renderShieldPanel();
+      }
     });
 
     window.peak.onDataUpdated((data) => {
@@ -842,6 +906,7 @@
       state.history = data.history;
       state.downloads = data.downloads;
       state.shieldStats = data.shieldStats;
+      if (data.shieldInfo) state.shieldInfo = data.shieldInfo;
       applyTheme(state.settings.theme);
       renderToolbar();
       renderBookmarksBar();
@@ -867,7 +932,7 @@
       } else if (action === 'open-downloads') {
         openDrawer('downloads');
       } else if (action === 'open-settings') {
-        openDrawer('settings');
+        window.peak.openSettings('');
       } else if (action === 'toggle-bookmarks-bar') {
         window.peak.updateSettings({ showBookmarksBar: !state.settings.showBookmarksBar });
       }
@@ -897,6 +962,7 @@
     state.history = initial.history || [];
     state.downloads = initial.downloads || [];
     state.shieldStats = initial.shieldStats || state.shieldStats;
+    if (initial.shieldInfo) state.shieldInfo = initial.shieldInfo;
 
     applyTheme(state.settings.theme);
     renderTabs();

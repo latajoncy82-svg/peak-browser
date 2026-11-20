@@ -12,14 +12,16 @@ const {
   net,
   Menu,
   clipboard,
-  shell
+  shell,
+  dialog
 } = require('electron');
 
 const store = require('./store');
-const { shouldBlockRequest } = require('./shield');
+const shield = require('./shield');
 
 const APP_ID = 'com.peakbrowser.app';
 const NEWTAB_URL = 'peak://newtab';
+const SETTINGS_URL = 'peak://settings';
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PAGES_DIR = path.join(__dirname, 'pages');
 const ASSETS_DIR = path.join(ROOT_DIR, 'assets');
@@ -76,6 +78,17 @@ let layoutState = {
 };
 let isHtmlFullScreen = false;
 let shieldBroadcastTimer = null;
+const upgradedHttpsHosts = new Set();
+const failedHttpsHosts = new Set();
+
+function getHostname(rawUrl) {
+  if (!rawUrl) return '';
+  try {
+    return new URL(rawUrl).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+}
 
 function getThemeBg(theme) {
   return THEME_BG_COLORS[theme] || THEME_BG_COLORS['alpine-dark'];
@@ -142,6 +155,13 @@ function resolvePeakFile(requestUrl) {
     return safeResolveInDir(PAGES_DIR, pathname);
   }
 
+  if (host === 'settings') {
+    if (pathname === '/' || pathname === '') {
+      return path.join(PAGES_DIR, 'settings.html');
+    }
+    return safeResolveInDir(PAGES_DIR, pathname);
+  }
+
   if (host === 'error') {
     if (pathname === '/' || pathname === '') {
       return path.join(PAGES_DIR, 'error.html');
@@ -175,6 +195,11 @@ function getTabByWebContentsId(wcId) {
 }
 
 function serializeTab(tab) {
+  const blockedDomains = Array.from(tab.blockedDomains.entries())
+    .map(([host, count]) => ({ host, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 40);
+
   return {
     id: tab.id,
     url: tab.url,
@@ -188,7 +213,22 @@ function serializeTab(tab) {
     audible: tab.audible,
     zoomFactor: tab.zoomFactor,
     blockedCount: tab.blockedCount,
+    blockedDomains,
     isSecure: tab.isSecure
+  };
+}
+
+function getSettingsPageState() {
+  return {
+    settings: store.getSettings(),
+    shieldStats: store.getShieldStats(),
+    shieldInfo: shield.getShieldInfo(),
+    appVersion: app.getVersion(),
+    versions: {
+      electron: process.versions.electron,
+      chrome: process.versions.chrome,
+      node: process.versions.node
+    }
   };
 }
 
@@ -206,7 +246,8 @@ function broadcastData() {
     bookmarks: store.getBookmarks(),
     history: store.getHistory(),
     downloads: store.getDownloads(),
-    shieldStats: store.getShieldStats()
+    shieldStats: store.getShieldStats(),
+    shieldInfo: shield.getShieldInfo()
   };
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('data:updated', payload);
@@ -216,9 +257,14 @@ function broadcastData() {
     speedDial: store.getSpeedDial(),
     shieldStats: payload.shieldStats
   };
+  const settingsPagePayload = getSettingsPageState();
   for (const tab of tabs) {
     if (!tab.view.webContents.isDestroyed() && isPeakPageUrl(tab.url)) {
-      tab.view.webContents.send('newtab:state-updated', newTabPayload);
+      if (tab.url.startsWith(SETTINGS_URL)) {
+        tab.view.webContents.send('settings:state-updated', settingsPagePayload);
+      } else {
+        tab.view.webContents.send('newtab:state-updated', newTabPayload);
+      }
     }
   }
 }
@@ -365,6 +411,10 @@ function updateTabUrlMeta(tab, url) {
     tab.displayUrl = '';
     tab.title = 'Nowa karta';
     tab.isSecure = true;
+  } else if (url.startsWith('peak://settings')) {
+    tab.displayUrl = 'peak://settings';
+    tab.title = 'Ustawienia';
+    tab.isSecure = true;
   } else if (url.startsWith('peak://error')) {
     try {
       const parsed = new URL(url);
@@ -484,6 +534,10 @@ function handleAppShortcut(input, sourceWebContents) {
     sendShortcutToChrome('open-downloads');
     return true;
   }
+  if (ctrl && !shift && key === ',') {
+    openSettingsTab('');
+    return true;
+  }
   if (ctrl && shift && key === 'b') {
     sendShortcutToChrome('toggle-bookmarks-bar');
     return true;
@@ -598,6 +652,25 @@ function attachTabContextMenu(tab) {
   });
 }
 
+function injectPageProtections(tab) {
+  if (!tab || tab.view.webContents.isDestroyed() || isPeakPageUrl(tab.url)) return;
+  const settings = store.getSettings();
+  if (!settings.shieldEnabled || settings.shieldLevel === 'off') return;
+  const host = getHostname(tab.url);
+  if (!host || store.isHostAllowlisted(host)) return;
+
+  if (settings.cosmeticBlocking) {
+    const css = shield.getCosmeticCssForUrl(tab.url, settings.shieldLevel);
+    if (css) {
+      tab.view.webContents.insertCSS(css).catch(() => {});
+    }
+  }
+
+  if (settings.shieldLevel === 'aggressive' && (host === 'youtube.com' || host.endsWith('.youtube.com'))) {
+    tab.view.webContents.executeJavaScript(shield.getYoutubeAdSkipScript()).catch(() => {});
+  }
+}
+
 function wireTabEvents(tab) {
   const wc = tab.view.webContents;
   attachKeyboardInterceptor(wc);
@@ -647,6 +720,7 @@ function wireTabEvents(tab) {
 
   wc.on('did-navigate', (_event, url) => {
     tab.blockedCount = 0;
+    tab.blockedDomains = new Map();
     updateTabUrlMeta(tab, url);
     updateTabNavState(tab);
     if (!isPeakPageUrl(url)) {
@@ -656,10 +730,18 @@ function wireTabEvents(tab) {
     broadcastTabs();
   });
 
+  wc.on('dom-ready', () => {
+    injectPageProtections(tab);
+  });
+
   wc.on('did-navigate-in-page', (_event, url, isMainFrame) => {
     if (!isMainFrame) return;
     updateTabUrlMeta(tab, url);
     updateTabNavState(tab);
+    const host = getHostname(url);
+    if (host === 'youtube.com' || host.endsWith('.youtube.com')) {
+      injectPageProtections(tab);
+    }
     if (!isPeakPageUrl(url)) {
       store.recordHistory({ url, title: tab.title });
       broadcastData();
@@ -724,6 +806,15 @@ function wireTabEvents(tab) {
     if (isPeakPageUrl(validatedURL)) {
       return;
     }
+    if (validatedURL && validatedURL.startsWith('https://')) {
+      const host = getHostname(validatedURL);
+      if (host && upgradedHttpsHosts.has(host) && !failedHttpsHosts.has(host)) {
+        failedHttpsHosts.add(host);
+        const fallbackHttp = validatedURL.replace(/^https:/i, 'http:');
+        wc.loadURL(fallbackHttp);
+        return;
+      }
+    }
     tab.isLoading = false;
     const errorUrl = `peak://error/?url=${encodeURIComponent(validatedURL || '')}&code=${encodeURIComponent(
       String(errorCode)
@@ -734,6 +825,7 @@ function wireTabEvents(tab) {
 
 function createTab(initialUrl = NEWTAB_URL, activate = true) {
   const id = `tab-${nextTabSeq++}`;
+  const defaultZoom = store.getSettings().defaultZoom || 1;
   const view = new WebContentsView({
     webPreferences: {
       session: peakSession,
@@ -756,14 +848,19 @@ function createTab(initialUrl = NEWTAB_URL, activate = true) {
     canGoForward: false,
     isMuted: false,
     audible: false,
-    zoomFactor: 1,
+    zoomFactor: defaultZoom,
     blockedCount: 0,
+    blockedDomains: new Map(),
     isSecure: initialUrl.startsWith('https://') || initialUrl.startsWith('peak://'),
     errorTargetUrl: null
   };
 
   tabs.push(tab);
   wireTabEvents(tab);
+
+  if (defaultZoom !== 1) {
+    view.webContents.setZoomFactor(defaultZoom);
+  }
 
   const targetUrl = resolveInputToUrl(initialUrl, store.getSettings().searchEngine);
   updateTabUrlMeta(tab, targetUrl);
@@ -930,6 +1027,35 @@ function toggleCurrentBookmark() {
   return { isBookmarked: true, bookmarks };
 }
 
+function applySettingsSideEffects(prevSettings, nextSettings) {
+  if (mainWindow && !mainWindow.isDestroyed() && prevSettings.theme !== nextSettings.theme) {
+    mainWindow.setBackgroundColor(getThemeBg(nextSettings.theme));
+  }
+  if (prevSettings.defaultZoom !== nextSettings.defaultZoom) {
+    for (const tab of tabs) {
+      if (!tab.view.webContents.isDestroyed()) {
+        tab.zoomFactor = nextSettings.defaultZoom;
+        tab.view.webContents.setZoomFactor(nextSettings.defaultZoom);
+      }
+    }
+    broadcastTabs();
+  }
+}
+
+function openSettingsTab(section = '') {
+  const hash = section ? (section.startsWith('#') ? section : `#${section}`) : '';
+  const existing = tabs.find((t) => t.url && t.url.startsWith(SETTINGS_URL));
+  if (existing) {
+    switchTab(existing.id);
+    if (hash && !existing.view.webContents.isDestroyed()) {
+      existing.view.webContents.executeJavaScript(`window.location.hash = ${JSON.stringify(hash)};`).catch(() => {});
+    }
+    return existing.id;
+  }
+  const created = createTab(`${SETTINGS_URL}${hash}`, true);
+  return created.id;
+}
+
 function setupSession() {
   peakSession = session.fromPartition('persist:peak');
   const cleanUA = peakSession
@@ -942,17 +1068,56 @@ function setupSession() {
   registerPeakProtocolOnSession(session.defaultSession);
 
   peakSession.webRequest.onBeforeRequest((details, callback) => {
-    const settings = store.getSettings();
-    if (!settings.shieldEnabled) {
+    const rawUrl = details.url || '';
+    if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
       callback({ cancel: false });
       return;
     }
 
-    if (shouldBlockRequest(details.url, details.resourceType)) {
-      if (typeof details.webContentsId === 'number') {
-        const tab = getTabByWebContentsId(details.webContentsId);
-        if (tab) {
-          tab.blockedCount += 1;
+    const settings = store.getSettings();
+    const tab = typeof details.webContentsId === 'number' ? getTabByWebContentsId(details.webContentsId) : null;
+    const sourceUrl = tab ? tab.url : details.initiator || details.referrer || '';
+    const pageHost = getHostname(sourceUrl) || getHostname(rawUrl);
+    const allowlisted = Boolean(pageHost && store.isHostAllowlisted(pageHost));
+
+    if (details.resourceType === 'mainFrame') {
+      const targetHost = getHostname(rawUrl);
+      const targetAllowlisted = Boolean(targetHost && store.isHostAllowlisted(targetHost));
+
+      if (settings.httpsUpgrade && !targetAllowlisted) {
+        const upgraded = shield.shouldUpgradeToHttps(rawUrl, failedHttpsHosts);
+        if (upgraded) {
+          upgradedHttpsHosts.add(getHostname(upgraded));
+          callback({ redirectURL: upgraded });
+          return;
+        }
+      }
+
+      if (settings.stripTrackingParams && !targetAllowlisted) {
+        const cleaned = shield.stripTrackingParams(rawUrl);
+        if (cleaned) {
+          callback({ redirectURL: cleaned });
+          return;
+        }
+      }
+
+      callback({ cancel: false });
+      return;
+    }
+
+    if (allowlisted || !settings.shieldEnabled || settings.shieldLevel === 'off') {
+      callback({ cancel: false });
+      return;
+    }
+
+    const result = shield.shouldBlockRequest(rawUrl, details.resourceType, sourceUrl, {
+      level: settings.shieldLevel
+    });
+    if (result.blocked) {
+      if (tab) {
+        tab.blockedCount += 1;
+        if (result.host) {
+          tab.blockedDomains.set(result.host, (tab.blockedDomains.get(result.host) || 0) + 1);
         }
       }
       store.incrementShieldBlocked();
@@ -960,7 +1125,83 @@ function setupSession() {
       callback({ cancel: true });
       return;
     }
+
     callback({ cancel: false });
+  });
+
+  peakSession.webRequest.onBeforeSendHeaders((details, callback) => {
+    const settings = store.getSettings();
+    const rawUrl = details.url || '';
+    if (!settings.privacyHeaders || (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://'))) {
+      callback({ requestHeaders: details.requestHeaders });
+      return;
+    }
+
+    const tab = typeof details.webContentsId === 'number' ? getTabByWebContentsId(details.webContentsId) : null;
+    const pageHost = getHostname(tab ? tab.url : '') || getHostname(rawUrl);
+    if (pageHost && store.isHostAllowlisted(pageHost)) {
+      callback({ requestHeaders: details.requestHeaders });
+      return;
+    }
+
+    const headers = { ...details.requestHeaders };
+    headers['DNT'] = '1';
+    headers['Sec-GPC'] = '1';
+
+    for (const key of Object.keys(headers)) {
+      const lower = key.toLowerCase();
+      if (lower === 'x-client-data') {
+        delete headers[key];
+      } else if (lower === 'referer' && headers[key]) {
+        try {
+          const refUrl = new URL(headers[key]);
+          const reqHost = getHostname(rawUrl);
+          if (refUrl.hostname.toLowerCase() !== reqHost) {
+            headers[key] = `${refUrl.origin}/`;
+          }
+        } catch {
+          // Keep original if unparseable
+        }
+      }
+    }
+
+    callback({ requestHeaders: headers });
+  });
+
+  peakSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    if (permission === 'fullscreen' || permission === 'pointerLock' || permission === 'clipboard-sanitized-write') {
+      callback(true);
+      return;
+    }
+
+    const settings = store.getSettings();
+    if (
+      settings.blockNotifications &&
+      ['notifications', 'midiSysex', 'idle-detection', 'serial', 'usb', 'hid', 'openExternal'].includes(permission)
+    ) {
+      callback(false);
+      return;
+    }
+
+    if (permission === 'media' || permission === 'geolocation') {
+      const reqUrl = (details && details.requestingUrl) || webContents.getURL();
+      const host = getHostname(reqUrl) || 'Nieznana strona';
+      const permLabel = permission === 'media' ? 'kamery lub mikrofonu' : 'lokalizacji';
+      dialog
+        .showMessageBox(mainWindow, {
+          type: 'question',
+          buttons: ['Odmów', 'Zezwól'],
+          defaultId: 0,
+          cancelId: 0,
+          title: 'Uprawnienia witryny',
+          message: `Witryna ${host} prosi o dostęp do ${permLabel}.`
+        })
+        .then(({ response }) => callback(response === 1))
+        .catch(() => callback(false));
+      return;
+    }
+
+    callback(false);
   });
 
   peakSession.on('will-download', (_event, item) => {
@@ -1048,6 +1289,10 @@ function registerIpcHandlers() {
     }
   });
 
+  ipcMain.handle('ui:open-settings', (_event, section) => {
+    return openSettingsTab(section || '');
+  });
+
   // Tabs & Navigation
   ipcMain.handle('tabs:get-state', () => ({
     tabs: tabs.map(serializeTab),
@@ -1056,7 +1301,8 @@ function registerIpcHandlers() {
     bookmarks: store.getBookmarks(),
     history: store.getHistory(),
     downloads: store.getDownloads(),
-    shieldStats: store.getShieldStats()
+    shieldStats: store.getShieldStats(),
+    shieldInfo: shield.getShieldInfo()
   }));
 
   ipcMain.handle('tabs:new', (_event, url) => {
@@ -1234,12 +1480,27 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('settings:update', (_event, partial) => {
+    const prev = store.getSettings();
     const next = store.updateSettings(partial);
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.setBackgroundColor(getThemeBg(next.theme));
-    }
+    applySettingsSideEffects(prev, next);
     broadcastData();
     return next;
+  });
+
+  ipcMain.handle('shield:toggle-site', (_event, host) => {
+    const targetHost = (host || '').trim().toLowerCase();
+    if (!targetHost) return store.getSettings();
+    if (store.isHostAllowlisted(targetHost)) {
+      store.removeAllowlistHost(targetHost);
+    } else {
+      store.addAllowlistHost(targetHost);
+    }
+    const active = getActiveTab();
+    if (active && !active.view.webContents.isDestroyed() && !isPeakPageUrl(active.url)) {
+      active.view.webContents.reload();
+    }
+    broadcastData();
+    return store.getSettings();
   });
 
   ipcMain.handle('privacy:clear-data', async () => {
@@ -1248,6 +1509,75 @@ function registerIpcHandlers() {
     await peakSession.clearCache();
     broadcastData();
     return { ok: true };
+  });
+
+  // Dedicated peak://settings handlers (strictly gated)
+  ipcMain.handle('settings-page:get-state', (event) => {
+    assertPeakSender(event);
+    return getSettingsPageState();
+  });
+
+  ipcMain.handle('settings-page:update', (event, partial) => {
+    assertPeakSender(event);
+    const prev = store.getSettings();
+    const next = store.updateSettings(partial);
+    applySettingsSideEffects(prev, next);
+    broadcastData();
+    return getSettingsPageState();
+  });
+
+  ipcMain.handle('settings-page:allowlist-add', (event, host) => {
+    assertPeakSender(event);
+    store.addAllowlistHost(host);
+    broadcastData();
+    return getSettingsPageState();
+  });
+
+  ipcMain.handle('settings-page:allowlist-remove', (event, host) => {
+    assertPeakSender(event);
+    store.removeAllowlistHost(host);
+    broadcastData();
+    return getSettingsPageState();
+  });
+
+  ipcMain.handle('settings-page:update-filters', async (event) => {
+    if (event.senderFrame && event.senderFrame.url && !event.senderFrame.url.startsWith('peak://') && !event.senderFrame.url.startsWith('file://')) {
+      throw new Error('Dostęp zabroniony');
+    }
+    const info = await shield.updateFilterLists(app.getPath('userData'));
+    broadcastData();
+    return info;
+  });
+
+  ipcMain.handle('settings-page:clear-data', async (event, options = {}) => {
+    assertPeakSender(event);
+    if (options.history) {
+      store.clearHistory();
+    }
+    if (options.cookies) {
+      await peakSession.clearStorageData();
+    }
+    if (options.cache) {
+      await peakSession.clearCache();
+    }
+    broadcastData();
+    return { ok: true };
+  });
+
+  ipcMain.handle('settings-page:open-devtools', (event) => {
+    assertPeakSender(event);
+    toggleActiveDevTools(event.sender);
+  });
+
+  ipcMain.handle('settings-page:open-external', (event, rawUrl) => {
+    assertPeakSender(event);
+    if (
+      typeof rawUrl === 'string' &&
+      (rawUrl.startsWith('https://peakbrowser.vercel.app') ||
+        rawUrl.startsWith('https://github.com/latajoncy82-svg/peak-browser'))
+    ) {
+      createTab(rawUrl, true);
+    }
   });
 
   // New Tab & peak:// handlers (strictly gated)
@@ -1388,26 +1718,58 @@ function waitForTabLoad(tab, timeoutMs = 15000) {
 async function runVerificationSuite(verifyDir) {
   fs.mkdirSync(verifyDir, { recursive: true });
 
-  // Unit assertions for shield.js
+  // Unit assertions for shield.js (full @ghostery/adblocker engine + privacy)
   assert.strictEqual(
-    shouldBlockRequest('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', 'script'),
+    shield.shouldBlockRequest(
+      'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js',
+      'script',
+      'https://example.com/'
+    ).blocked,
     true,
     'Shield should block adsbygoogle script'
   );
   assert.strictEqual(
-    shouldBlockRequest('https://hit.gemius.pl/xgemius.js', 'script'),
+    shield.shouldBlockRequest(
+      'https://securepubads.g.doubleclick.net/tag/js/gpt.js',
+      'script',
+      'https://example.com/'
+    ).blocked,
     true,
-    'Shield should block gemius tracker'
+    'Shield should block doubleclick GPT script'
   );
   assert.strictEqual(
-    shouldBlockRequest('https://example.com/index.html', 'mainFrame'),
+    shield.shouldBlockRequest('https://hit.gemius.pl/xgemius.js', 'script', 'https://onet.pl/').blocked,
+    true,
+    'Shield should block Polish gemius tracker'
+  );
+  assert.strictEqual(
+    shield.shouldBlockRequest('https://example.com/index.html', 'mainFrame', 'https://example.com/').blocked,
     false,
     'Shield must allow mainFrame navigation'
   );
   assert.strictEqual(
-    shouldBlockRequest('peak://newtab/', 'subFrame'),
+    shield.shouldBlockRequest('peak://newtab/', 'subFrame', 'peak://newtab/').blocked,
     false,
     'Shield must allow peak:// requests'
+  );
+  assert.ok(
+    shield.getCosmeticCssForUrl('https://www.youtube.com/watch?v=test', 'aggressive').length > 100,
+    'Cosmetic CSS for YouTube should be non-empty'
+  );
+  assert.strictEqual(
+    shield.stripTrackingParams('https://example.com/page?utm_source=ads&fbclid=123&id=42'),
+    'https://example.com/page?id=42',
+    'Tracking params should be stripped cleanly'
+  );
+  assert.strictEqual(
+    shield.shouldUpgradeToHttps('http://example.com/test', new Set()),
+    'https://example.com/test',
+    'HTTP should upgrade to HTTPS'
+  );
+  assert.strictEqual(
+    shield.shouldUpgradeToHttps('http://localhost:3000/', new Set()),
+    null,
+    'Localhost must not auto-upgrade to HTTPS'
   );
 
   // Unit assertions for store.js
@@ -1415,14 +1777,18 @@ async function runVerificationSuite(verifyDir) {
   fs.rmSync(unitStoreDir, { recursive: true, force: true });
   const testStore = new store.PeakStore().init(unitStoreDir);
   assert.strictEqual(testStore.getSettings().theme, 'alpine-dark');
-  testStore.updateSettings({ theme: 'alpine-light', searchEngine: 'duckduckgo' });
+  assert.strictEqual(testStore.getSettings().shieldLevel, 'aggressive');
+  testStore.updateSettings({ theme: 'alpine-light', searchEngine: 'duckduckgo', defaultZoom: 1.1 });
+  testStore.addAllowlistHost('https://www.bank.pl/login');
   testStore.addBookmark({ title: 'Example', url: 'https://example.com' });
   testStore.recordHistory({ url: 'https://example.com', title: 'Example' });
   testStore.flushSync();
 
-  const reloadedStore = new store.PeakStore().init(path.join(verifyDir, 'unit-store'));
+  const reloadedStore = new store.PeakStore().init(unitStoreDir);
   assert.strictEqual(reloadedStore.getSettings().theme, 'alpine-light');
   assert.strictEqual(reloadedStore.getSettings().searchEngine, 'duckduckgo');
+  assert.strictEqual(reloadedStore.getSettings().defaultZoom, 1.1);
+  assert.strictEqual(reloadedStore.isHostAllowlisted('bank.pl'), true);
   assert.strictEqual(reloadedStore.isBookmarked('https://example.com'), true);
   assert.strictEqual(reloadedStore.getHistory().length, 1);
 
@@ -1445,47 +1811,37 @@ async function runVerificationSuite(verifyDir) {
     );
   };
 
-  // Wait for initial newtab load (default alpine-dark)
+  // 1. Initial default alpine-dark New Tab
   await new Promise((r) => setTimeout(r, 700));
   const initialTab = getActiveTab();
   await waitForTabLoad(initialTab);
   await capturePair('1-newtab-dark');
 
-  // Open a 2nd tab briefly + Settings drawer so we verify connected tab scoops & dark drawer
-  const secondTab = createTab(NEWTAB_URL, false);
-  await waitForTabLoad(secondTab);
+  // 2. Open full-page Settings (peak://settings) via gear button
   await mainWindow.webContents.executeJavaScript(`
-    (() => {
-      document.getElementById('btn-settings').click();
-    })();
+    document.getElementById('btn-settings').click();
   `);
-  await new Promise((r) => setTimeout(r, 400));
-  await capturePair('2-dark-settings');
+  await new Promise((r) => setTimeout(r, 350));
+  const settingsTab = getActiveTab();
+  await waitForTabLoad(settingsTab);
+  await new Promise((r) => setTimeout(r, 350));
+  await capturePair('2-settings-page');
 
-  // Switch to alpine-light and close drawer
-  await mainWindow.webContents.executeJavaScript(`
-    (() => {
-      const lightBtn = document.querySelector('[data-theme-choice="alpine-light"]');
-      if (lightBtn) lightBtn.click();
-      document.getElementById('drawer-close').click();
-    })();
+  // 3. Scroll / navigate peak://settings to #ochrona section
+  await settingsTab.view.webContents.executeJavaScript(`
+    document.getElementById('ochrona').scrollIntoView({ behavior: 'instant', block: 'start' });
+    document.querySelector('[data-section="ochrona"]').click();
   `);
-  await new Promise((r) => setTimeout(r, 400));
-  await capturePair('3-newtab-light');
+  await new Promise((r) => setTimeout(r, 350));
+  await capturePair('3-settings-shield');
 
-  // Switch back to alpine-dark, close 2nd tab, and navigate to https://example.com
-  closeTab(secondTab.id);
-  await mainWindow.webContents.executeJavaScript(`
-    (() => {
-      document.getElementById('btn-settings').click();
-      const darkBtn = document.querySelector('[data-theme-choice="alpine-dark"]');
-      if (darkBtn) darkBtn.click();
-      document.getElementById('drawer-close').click();
-    })();
-  `);
-  await new Promise((r) => setTimeout(r, 300));
+  // 4. Switch back to initial tab, load https://example.com, and open quick Ochrona drawer
+  closeTab(settingsTab.id);
   initialTab.view.webContents.loadURL('https://example.com');
   await waitForTabLoad(initialTab);
+  await mainWindow.webContents.executeJavaScript(`
+    document.getElementById('btn-shield').click();
+  `);
   await new Promise((r) => setTimeout(r, 400));
 
   const verifyChromeState = await mainWindow.webContents.executeJavaScript(`
@@ -1493,23 +1849,27 @@ async function runVerificationSuite(verifyDir) {
       omniboxValue: document.getElementById('omnibox-input').value,
       omniboxDomain: document.getElementById('omnibox-display')?.textContent || '',
       backDisabled: document.getElementById('btn-back').disabled,
-      activeTabTitle: document.querySelector('.tab.active .tab-title')?.textContent || ''
+      activeTabTitle: document.querySelector('.tab.active .tab-title')?.textContent || '',
+      shieldHost: document.getElementById('shield-site-host')?.textContent || '',
+      rulesBadge: document.getElementById('shield-rules-badge')?.textContent || ''
     }))();
   `);
   assert.ok(verifyChromeState.omniboxValue.includes('example.com'), 'Omnibox should display example.com');
   assert.ok(verifyChromeState.omniboxDomain.includes('example.com'), 'Formatted omnibox should display example.com');
   assert.strictEqual(verifyChromeState.backDisabled, false, 'Back button should be enabled after navigating');
-  assert.ok(verifyChromeState.activeTabTitle.length > 0, 'Active tab should have a title');
+  assert.strictEqual(verifyChromeState.shieldHost, 'example.com', 'Shield drawer should show example.com');
+  assert.ok(verifyChromeState.rulesBadge.length > 0, 'Shield drawer should show active rules count');
 
-  await capturePair('4-example');
+  await capturePair('4-shield-drawer');
   fs.writeFileSync(
     path.join(verifyDir, 'summary.json'),
-    JSON.stringify({ ok: true, verifyChromeState }, null, 2)
+    JSON.stringify({ ok: true, verifyChromeState, shieldInfo: shield.getShieldInfo() }, null, 2)
   );
 }
 
 app.whenReady().then(() => {
   store.init(app.getPath('userData'));
+  shield.initShield(app.getPath('userData'), ASSETS_DIR);
   setupSession();
   registerIpcHandlers();
   createMainWindow();

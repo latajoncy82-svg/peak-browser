@@ -142,9 +142,10 @@
             </svg>
           </button>
 
-          <button id="btn-settings" class="nav-btn" title="Ustawienia" aria-label="Ustawienia">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-              <path d="M3.2 4.6h9.6M3.2 8h9.6M3.2 11.4h9.6" />
+          <button id="btn-settings" class="nav-btn" title="Ustawienia (Ctrl+,)" aria-label="Ustawienia">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="8" r="2.2" />
+              <path d="M8 2.1v1.4M8 12.5v1.4M2.1 8h1.4M12.5 8h1.4M3.8 3.8l1 1M11.2 11.2l1 1M12.2 3.8l-1 1M4.8 11.2l-1 1" />
             </svg>
           </button>
         </div>
@@ -177,10 +178,10 @@
     <aside id="drawer" class="drawer hidden" aria-label="Panel boczny">
       <div class="drawer-header">
         <div class="drawer-tabs" role="tablist">
+          <button class="drawer-tab" data-panel="shield">Ochrona</button>
           <button class="drawer-tab" data-panel="bookmarks">Zakładki</button>
           <button class="drawer-tab" data-panel="history">Historia</button>
           <button class="drawer-tab" data-panel="downloads">Pobrane</button>
-          <button class="drawer-tab" data-panel="settings">Ustawienia</button>
         </div>
         <button id="drawer-close" class="drawer-close-btn" title="Zamknij panel">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round">
@@ -190,6 +191,50 @@
       </div>
 
       <div id="drawer-body" class="drawer-body">
+        <section id="panel-shield" class="panel hidden">
+          <div class="shield-site-card">
+            <div class="shield-site-top">
+              <div class="shield-site-info">
+                <div id="shield-site-host" class="shield-site-host">Nowa karta</div>
+                <div id="shield-site-sub" class="shield-site-sub">Peak Shield aktywny</div>
+              </div>
+              <input id="toggle-site-shield" type="checkbox" class="peak-switch" title="Ochrona na tej stronie" />
+            </div>
+            <div class="shield-stats-pair">
+              <div class="shield-stat">
+                <span class="shield-stat-label">Na tej stronie</span>
+                <strong id="shield-tab-count">0</strong>
+              </div>
+              <div class="shield-stat">
+                <span class="shield-stat-label">Łącznie</span>
+                <strong id="shield-total-count">0</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="shield-group">
+            <div class="settings-heading">Poziom ochrony</div>
+            <div class="shield-segmented" role="group" aria-label="Poziom ochrony">
+              <button type="button" class="shield-seg-btn" data-shield-level="off">Wyłączony</button>
+              <button type="button" class="shield-seg-btn" data-shield-level="standard">Standard</button>
+              <button type="button" class="shield-seg-btn" data-shield-level="aggressive">Agresywny</button>
+            </div>
+          </div>
+
+          <div class="shield-group shield-domains-group">
+            <div class="panel-top-row">
+              <span class="settings-heading">Zablokowane na tej stronie</span>
+              <span id="shield-rules-badge" class="rules-pill"></span>
+            </div>
+            <div id="shield-domains-list" class="item-list"></div>
+          </div>
+
+          <button id="btn-open-full-shield" type="button" class="flat-action-btn shield-full-btn">
+            <span>Pełne ustawienia ochrony</span>
+            <span>→</span>
+          </button>
+        </section>
+
         <section id="panel-bookmarks" class="panel hidden">
           <div class="panel-top-row">
             <input id="bookmarks-filter" class="panel-search" type="text" placeholder="Filtruj zakładki..." />
@@ -215,66 +260,6 @@
             <button id="btn-clear-downloads" class="ghost-btn">Wyczyść</button>
           </div>
           <div id="downloads-list" class="item-list"></div>
-        </section>
-
-        <section id="panel-settings" class="panel hidden">
-          <div class="settings-group">
-            <h3 class="settings-heading">Wygląd</h3>
-            <div class="theme-segmented" role="group" aria-label="Motyw">
-              <button class="theme-choice" data-theme-choice="alpine-dark">
-                <span class="theme-dot dot-dark"></span>
-                <span>Ciemny</span>
-              </button>
-              <button class="theme-choice" data-theme-choice="alpine-royal">
-                <span class="theme-dot dot-royal"></span>
-                <span>Niebieski</span>
-              </button>
-              <button class="theme-choice" data-theme-choice="alpine-light">
-                <span class="theme-dot dot-light"></span>
-                <span>Jasny</span>
-              </button>
-            </div>
-            <label class="toggle-row">
-              <div>
-                <div class="toggle-title">Pasek zakładek</div>
-                <div class="toggle-sub">Skrót Ctrl+Shift+B</div>
-              </div>
-              <input id="toggle-bookmarks-bar" type="checkbox" class="peak-switch" />
-            </label>
-          </div>
-
-          <div class="settings-group">
-            <h3 class="settings-heading">Wyszukiwarka</h3>
-            <select id="select-search-engine" class="peak-select">
-              <option value="google">Google</option>
-              <option value="duckduckgo">DuckDuckGo</option>
-              <option value="bing">Bing</option>
-              <option value="brave">Brave Search</option>
-            </select>
-          </div>
-
-          <div class="settings-group">
-            <h3 class="settings-heading">Prywatność</h3>
-            <label class="toggle-row">
-              <div>
-                <div class="toggle-title">Peak Shield</div>
-                <div class="toggle-sub">Zablokowano łącznie: <span id="settings-shield-total">0</span></div>
-              </div>
-              <input id="toggle-shield" type="checkbox" class="peak-switch" />
-            </label>
-            <button id="btn-clear-browsing-data" class="flat-action-btn">Wyczyść dane przeglądania</button>
-            <div id="clear-data-feedback" class="feedback-text hidden">Dane przeglądania zostały wyczyszczone.</div>
-          </div>
-
-          <div class="settings-group">
-            <h3 class="settings-heading">Narzędzia</h3>
-            <button id="btn-devtools" class="flat-action-btn">Narzędzia deweloperskie (F12)</button>
-          </div>
-
-          <div class="about-footer">
-            <img src="../../assets/icon-64.png" alt="Peak Browser" class="about-mini-icon" />
-            <span>Peak Browser 1.1.0</span>
-          </div>
         </section>
       </div>
     </aside>

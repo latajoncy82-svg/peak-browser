@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('peak', {
   isWindowMaximized: () => ipcRenderer.invoke('window:is-maximized'),
   toggleFullScreen: () => ipcRenderer.send('window:toggle-fullscreen'),
   setLayout: (layout) => ipcRenderer.send('ui:set-layout', layout),
+  openSettings: (section = '') => ipcRenderer.invoke('ui:open-settings', section),
 
   // Tabs & navigation
   getInitialState: () => ipcRenderer.invoke('tabs:get-state'),
@@ -51,6 +52,8 @@ contextBridge.exposeInMainWorld('peak', {
   cancelDownload: (id) => ipcRenderer.invoke('downloads:cancel', id),
   clearDownloads: () => ipcRenderer.invoke('downloads:clear'),
   updateSettings: (partial) => ipcRenderer.invoke('settings:update', partial),
+  toggleSiteShield: (host) => ipcRenderer.invoke('shield:toggle-site', host),
+  updateFilters: () => ipcRenderer.invoke('settings-page:update-filters'),
   clearBrowsingData: () => ipcRenderer.invoke('privacy:clear-data'),
 
   // Event listeners

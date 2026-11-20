@@ -1216,6 +1216,147 @@ html[data-theme='alpine-royal'] .new-tab-btn:hover {
   border-color: var(--accent);
 }
 
+/* Quick Shield Drawer Panel */
+.shield-site-card {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--drawer-border);
+  background: var(--omnibox-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.shield-site-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.shield-site-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.shield-site-host {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shield-site-sub {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.shield-stats-pair {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding-top: 9px;
+  border-top: 1px solid var(--drawer-border);
+}
+
+.shield-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.shield-stat-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.shield-stat strong {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.shield-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--drawer-border);
+}
+
+.shield-segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 3px;
+  border-radius: 7px;
+  border: 1px solid var(--drawer-border);
+  background: var(--omnibox-bg);
+}
+
+.shield-seg-btn {
+  height: 26px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.shield-seg-btn.active {
+  background: var(--accent);
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.rules-pill {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.domain-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 7px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+.domain-row:hover {
+  background: var(--drawer-hover);
+}
+
+.domain-host {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.domain-count {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.shield-full-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 /* Flat Settings */
 .settings-group {
   display: flex;

@@ -5,6 +5,7 @@ const MAX_HISTORY = 1000;
 const MAX_DOWNLOADS = 100;
 const VALID_THEMES = new Set(['alpine-light', 'alpine-royal', 'alpine-dark']);
 const VALID_SEARCH_ENGINES = new Set(['google', 'duckduckgo', 'bing', 'brave']);
+const VALID_SHIELD_LEVELS = new Set(['off', 'standard', 'aggressive']);
 
 function createDefaultSpeedDial() {
   return [
@@ -17,13 +18,45 @@ function createDefaultSpeedDial() {
   ];
 }
 
+function normalizeHost(rawHost) {
+  if (!rawHost || typeof rawHost !== 'string') return '';
+  let text = rawHost.trim().toLowerCase();
+  if (!text) return '';
+  if (text.includes('://')) {
+    try {
+      text = new URL(text).hostname.toLowerCase();
+    } catch {
+      return '';
+    }
+  }
+  text = text.replace(/:\d+$/, '').replace(/^www\./, '');
+  if (!/^[a-z0-9.-]+$/.test(text) || !text.includes('.')) {
+    return '';
+  }
+  return text;
+}
+
+function clampZoom(val) {
+  const num = Number(val);
+  if (!Number.isFinite(num)) return 1;
+  return Math.min(2, Math.max(0.5, Math.round(num * 100) / 100));
+}
+
 function createDefaultState() {
   return {
     uiVersion: 2,
     settings: {
       theme: 'alpine-dark',
       searchEngine: 'google',
+      defaultZoom: 1,
       shieldEnabled: true,
+      shieldLevel: 'aggressive',
+      cosmeticBlocking: true,
+      httpsUpgrade: true,
+      stripTrackingParams: true,
+      privacyHeaders: true,
+      blockNotifications: true,
+      allowlist: [],
       showBookmarksBar: false
     },
     bookmarks: [],
@@ -71,10 +104,27 @@ class PeakStore {
       const rawSettings = parsed.settings && typeof parsed.settings === 'object' ? parsed.settings : {};
       const loadedUiVersion = typeof parsed.uiVersion === 'number' ? parsed.uiVersion : 1;
       let theme = VALID_THEMES.has(rawSettings.theme) ? rawSettings.theme : defaults.settings.theme;
-      let migrated = loadedUiVersion < 2;
+      const migrated = loadedUiVersion < 2;
       if (loadedUiVersion < 2 && theme === 'alpine-light') {
         theme = 'alpine-dark';
       }
+
+      const rawShieldEnabled =
+        typeof rawSettings.shieldEnabled === 'boolean'
+          ? rawSettings.shieldEnabled
+          : defaults.settings.shieldEnabled;
+
+      let shieldLevel = VALID_SHIELD_LEVELS.has(rawSettings.shieldLevel)
+        ? rawSettings.shieldLevel
+        : rawShieldEnabled
+          ? defaults.settings.shieldLevel
+          : 'off';
+      const shieldEnabled = shieldLevel !== 'off';
+
+      const allowlist = Array.isArray(rawSettings.allowlist)
+        ? Array.from(new Set(rawSettings.allowlist.map(normalizeHost).filter(Boolean)))
+        : [];
+
       return {
         migrated,
         state: {
@@ -84,10 +134,33 @@ class PeakStore {
             searchEngine: VALID_SEARCH_ENGINES.has(rawSettings.searchEngine)
               ? rawSettings.searchEngine
               : defaults.settings.searchEngine,
-            shieldEnabled:
-              typeof rawSettings.shieldEnabled === 'boolean'
-                ? rawSettings.shieldEnabled
-                : defaults.settings.shieldEnabled,
+            defaultZoom:
+              typeof rawSettings.defaultZoom === 'number'
+                ? clampZoom(rawSettings.defaultZoom)
+                : defaults.settings.defaultZoom,
+            shieldEnabled,
+            shieldLevel,
+            cosmeticBlocking:
+              typeof rawSettings.cosmeticBlocking === 'boolean'
+                ? rawSettings.cosmeticBlocking
+                : defaults.settings.cosmeticBlocking,
+            httpsUpgrade:
+              typeof rawSettings.httpsUpgrade === 'boolean'
+                ? rawSettings.httpsUpgrade
+                : defaults.settings.httpsUpgrade,
+            stripTrackingParams:
+              typeof rawSettings.stripTrackingParams === 'boolean'
+                ? rawSettings.stripTrackingParams
+                : defaults.settings.stripTrackingParams,
+            privacyHeaders:
+              typeof rawSettings.privacyHeaders === 'boolean'
+                ? rawSettings.privacyHeaders
+                : defaults.settings.privacyHeaders,
+            blockNotifications:
+              typeof rawSettings.blockNotifications === 'boolean'
+                ? rawSettings.blockNotifications
+                : defaults.settings.blockNotifications,
+            allowlist,
             showBookmarksBar:
               typeof rawSettings.showBookmarksBar === 'boolean'
                 ? rawSettings.showBookmarksBar
@@ -140,7 +213,6 @@ class PeakStore {
       try {
         fs.renameSync(tmpPath, this.filePath);
       } catch {
-        // Fallback when Windows locks target during quick updates
         fs.writeFileSync(this.filePath, payload, 'utf8');
         if (fs.existsSync(tmpPath)) {
           try {
@@ -157,27 +229,89 @@ class PeakStore {
   }
 
   getSettings() {
-    return { ...this.state.settings };
+    return {
+      ...this.state.settings,
+      allowlist: [...this.state.settings.allowlist]
+    };
   }
 
   updateSettings(partial) {
     if (!partial || typeof partial !== 'object') return this.getSettings();
-    const next = { ...this.state.settings };
+    const next = {
+      ...this.state.settings,
+      allowlist: [...this.state.settings.allowlist]
+    };
     if (VALID_THEMES.has(partial.theme)) {
       next.theme = partial.theme;
     }
     if (VALID_SEARCH_ENGINES.has(partial.searchEngine)) {
       next.searchEngine = partial.searchEngine;
     }
-    if (typeof partial.shieldEnabled === 'boolean') {
+    if (typeof partial.defaultZoom === 'number') {
+      next.defaultZoom = clampZoom(partial.defaultZoom);
+    }
+    if (VALID_SHIELD_LEVELS.has(partial.shieldLevel)) {
+      next.shieldLevel = partial.shieldLevel;
+      next.shieldEnabled = partial.shieldLevel !== 'off';
+    } else if (typeof partial.shieldEnabled === 'boolean') {
       next.shieldEnabled = partial.shieldEnabled;
+      if (!partial.shieldEnabled) {
+        next.shieldLevel = 'off';
+      } else if (next.shieldLevel === 'off') {
+        next.shieldLevel = 'aggressive';
+      }
+    }
+    if (typeof partial.cosmeticBlocking === 'boolean') {
+      next.cosmeticBlocking = partial.cosmeticBlocking;
+    }
+    if (typeof partial.httpsUpgrade === 'boolean') {
+      next.httpsUpgrade = partial.httpsUpgrade;
+    }
+    if (typeof partial.stripTrackingParams === 'boolean') {
+      next.stripTrackingParams = partial.stripTrackingParams;
+    }
+    if (typeof partial.privacyHeaders === 'boolean') {
+      next.privacyHeaders = partial.privacyHeaders;
+    }
+    if (typeof partial.blockNotifications === 'boolean') {
+      next.blockNotifications = partial.blockNotifications;
+    }
+    if (Array.isArray(partial.allowlist)) {
+      next.allowlist = Array.from(new Set(partial.allowlist.map(normalizeHost).filter(Boolean)));
     }
     if (typeof partial.showBookmarksBar === 'boolean') {
       next.showBookmarksBar = partial.showBookmarksBar;
     }
     this.state.settings = next;
     this._scheduleSave();
-    return { ...next };
+    return this.getSettings();
+  }
+
+  isHostAllowlisted(rawHost) {
+    const host = normalizeHost(rawHost);
+    if (!host) return false;
+    return this.state.settings.allowlist.includes(host);
+  }
+
+  addAllowlistHost(rawHost) {
+    const host = normalizeHost(rawHost);
+    if (!host) return this.getSettings().allowlist;
+    if (!this.state.settings.allowlist.includes(host)) {
+      this.state.settings.allowlist = [host, ...this.state.settings.allowlist];
+      this._scheduleSave();
+    }
+    return [...this.state.settings.allowlist];
+  }
+
+  removeAllowlistHost(rawHost) {
+    const host = normalizeHost(rawHost);
+    if (!host) return this.getSettings().allowlist;
+    const before = this.state.settings.allowlist.length;
+    this.state.settings.allowlist = this.state.settings.allowlist.filter((h) => h !== host);
+    if (this.state.settings.allowlist.length !== before) {
+      this._scheduleSave();
+    }
+    return [...this.state.settings.allowlist];
   }
 
   getBookmarks() {
@@ -338,6 +472,7 @@ class PeakStore {
   getShieldStats() {
     return {
       enabled: this.state.settings.shieldEnabled,
+      level: this.state.settings.shieldLevel,
       totalBlocked: this.state.shieldTotalBlocked
     };
   }
@@ -345,3 +480,4 @@ class PeakStore {
 
 module.exports = new PeakStore();
 module.exports.PeakStore = PeakStore;
+module.exports.normalizeHost = normalizeHost;

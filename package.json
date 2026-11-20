@@ -1,7 +1,7 @@
 {
   "name": "peak-browser",
   "productName": "Peak Browser",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Czysta, szybka przegladarka z motywem niebieskiej gory",
   "author": "Peak Browser",
   "repository": "https://github.com/latajoncy82-svg/peak-browser",
@@ -57,5 +57,8 @@
     "portable": {
       "artifactName": "Peak-Browser-Portable-${version}.${ext}"
     }
+  },
+  "dependencies": {
+    "@ghostery/adblocker": "^2.20.3"
   }
 }

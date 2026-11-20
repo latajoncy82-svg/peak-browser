@@ -1,6 +1,6 @@
-### Co się zmieniło w wersji 1.1.0
+### Co się zmieniło w wersji 1.2.0
 
-- **Domyślny ciemny motyw Niebieskiej Góry (`Ciemny`)**: głęboki alpejski granat w całym interfejsie okna, na stronie nowej karty (`peak://newtab`), w oknie podpowiedzi oraz na ekranie błędu.
-- **Dopracowane połączone karty i zmiana kolejności**: płynne wyprofilowane łączenie aktywnej karty z paskiem narzędzi, zwarty górny pasek (`78 px`) oraz przeciąganie kart myszką (`drag & drop`).
-- **Czytelniejszy pasek adresu**: wyróżniona nazwa domeny przy wyciszonym protokole i ścieżce oraz szybki przycisk kopiowania adresu URL po najechaniu myszką.
-- **Odświeżona Nowa Karta i panel boczny**: równomierny rząd skrótów w jednym wierszu, satynowe oszklone karty na nocnej panoramie, smukłe paski przewijania oraz szybkie otwieranie zakładek i historii w nowej karcie.
+- **Pełny silnik blokowania reklam Peak Shield (`148 604` reguły)**: wbudowany silnik `@ghostery/adblocker` oparty na listach EasyList, EasyPrivacy, Peter Lowe, uBlock Origin Filters & Privacy oraz Polskich filtrach reklamowych (`MajkiIT`) wraz z możliwością aktualizacji list jednym kliknięciem.
+- **Filtrowanie kosmetyczne i ochrona YouTube**: automatyczne ukrywanie pustych ramek po reklamach, blokowanie trackerów i skryptów koparek w trybie agresywnym oraz usuwanie banerów i nakładek reklamowych na YouTube.
+- **Wzmocniona ochrona prywatności**: wymuszanie szyfrowanych połączeń `HTTPS-First` z bezpiecznym powrotem przy błędzie certyfikatu, czyszczenie parametrów śledzących URL (`utm_*`, `fbclid`, `gclid`, `msclkid`), wysyłanie nagłówków `Sec-GPC` i `DNT`, usuwanie `X-Client-Data`, skracanie `Referer` między witrynami oraz automatyczne blokowanie natrętnych powiadomień push, USB, MIDI i HID.
+- **Przeprojektowane pełnoekranowe Ustawienia (`peak://settings`) i panel Ochrony**: dwukolumnowy układ z wyszukiwarką opcji, podglądem motywów na żywo, listą wyjątków dla witryn, podglądem zablokowanych domen w panelu `Ochrona` oraz granulowanym czyszczeniem historii, cookies i pamięci podręcznej.

@@ -21,6 +21,7 @@
     previewTabs: Array.from(document.querySelectorAll('.preview-tab')),
     previewLight: document.getElementById('preview-img-light'),
     previewDark: document.getElementById('preview-img-dark'),
+    previewSettings: document.getElementById('preview-img-settings'),
 
     releasesList: document.getElementById('releases-list'),
     releasesSourceNote: document.getElementById('releases-source-note')
@@ -60,6 +61,9 @@
     }
     el.previewLight.classList.toggle('hidden', mode !== 'light');
     el.previewDark.classList.toggle('hidden', mode !== 'dark');
+    if (el.previewSettings) {
+      el.previewSettings.classList.toggle('hidden', mode !== 'settings');
+    }
   }
 
   function appendFormattedInline(parent, text) {

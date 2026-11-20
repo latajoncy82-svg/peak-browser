@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="alpine-dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self' peak:; img-src 'self' peak: data:; style-src 'self' peak:; script-src 'self' peak:;"
+  />
+  <title>Ustawienia</title>
+  <link rel="stylesheet" href="peak://settings/settings.css" />
+</head>
+<body>
+  <div class="settings-shell">
+    <!-- Left Navigation Rail -->
+    <aside class="nav-rail" aria-label="Kategorie ustawień">
+      <div class="rail-brand">
+        <img src="peak://assets/icon-64.png" alt="Peak Browser" class="rail-logo" />
+        <div>
+          <div class="rail-title">Ustawienia</div>
+          <div id="rail-version" class="rail-version">Peak Browser 1.2.0</div>
+        </div>
+      </div>
+
+      <div class="rail-search-wrap">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round">
+          <circle cx="7.2" cy="7.2" r="4.3" />
+          <path d="M10.5 10.5L13.5 13.5" />
+        </svg>
+        <input id="settings-search" type="text" placeholder="Szukaj w ustawieniach..." autocomplete="off" />
+      </div>
+
+      <nav class="rail-nav" aria-label="Sekcje ustawień">
+        <a href="#wyglad" class="rail-link active" data-section="wyglad">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2.5" width="12" height="11" rx="2" />
+            <path d="M2 6h12M6 2.5V6" />
+          </svg>
+          <span>Wygląd</span>
+        </a>
+        <a href="#ochrona" class="rail-link" data-section="ochrona">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2.2L12.8 4.1v3.6c0 3.1-2 5.2-4.8 6.2-2.8-1-4.8-3.1-4.8-6.2V4.1L8 2.2z" />
+            <path d="M5.8 8.1l1.5 1.5 3-3.1" />
+          </svg>
+          <span>Ochrona i reklamy</span>
+        </a>
+        <a href="#wyszukiwarka" class="rail-link" data-section="wyszukiwarka">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round">
+            <circle cx="7.2" cy="7.2" r="4.3" />
+            <path d="M10.5 10.5L13.5 13.5" />
+          </svg>
+          <span>Wyszukiwarka</span>
+        </a>
+        <a href="#prywatnosc" class="rail-link" data-section="prywatnosc">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3.5" y="7.2" width="9" height="6" rx="1.4" />
+            <path d="M5.5 7.2V5.3a2.5 2.5 0 0 1 5 0v1.9" />
+          </svg>
+          <span>Prywatność i dane</span>
+        </a>
+        <a href="#system" class="rail-link" data-section="system">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="8" r="2.2" />
+            <path d="M8 2.2v1.4M8 12.4v1.4M2.2 8h1.4M12.4 8h1.4M3.9 3.9l1 1M11.1 11.1l1 1M12.1 3.9l-1 1M4.9 11.1l-1 1" />
+          </svg>
+          <span>Skróty i system</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Settings Content -->
+    <main class="content-area">
+      <div class="content-inner">
+        <!-- 1. Wygląd -->
+        <section id="wyglad" class="settings-section" data-search="wygląd motyw ciemny niebieski jasny pasek zakładek powiększenie zoom">
+          <div class="section-head">
+            <h1>Wygląd</h1>
+            <p>Dopasuj kolorystykę Niebieskiej Góry, pasek zakładek i skalowanie stron.</p>
+          </div>
+
+          <div class="theme-preview-grid" role="group" aria-label="Motyw przeglądarki">
+            <button type="button" class="theme-preview-card" data-theme-choice="alpine-dark">
+              <div class="mini-window mini-dark">
+                <div class="mini-tabbar">
+                  <span class="mini-tab active"></span>
+                  <span class="mini-tab"></span>
+                </div>
+                <div class="mini-toolbar"><span class="mini-bar"></span></div>
+                <div class="mini-canvas"><span class="mini-accent"></span></div>
+              </div>
+              <div class="theme-card-meta">
+                <span class="theme-card-title">Ciemny</span>
+                <span class="theme-card-sub">Alpejski granat</span>
+              </div>
+            </button>
+
+            <button type="button" class="theme-preview-card" data-theme-choice="alpine-royal">
+              <div class="mini-window mini-royal">
+                <div class="mini-tabbar">
+                  <span class="mini-tab active"></span>
+                  <span class="mini-tab"></span>
+                </div>
+                <div class="mini-toolbar"><span class="mini-bar"></span></div>
+                <div class="mini-canvas"><span class="mini-accent"></span></div>
+              </div>
+              <div class="theme-card-meta">
+                <span class="theme-card-title">Niebieski</span>
+                <span class="theme-card-sub">Królewski błękit</span>
+              </div>
+            </button>
+
+            <button type="button" class="theme-preview-card" data-theme-choice="alpine-light">
+              <div class="mini-window mini-light">
+                <div class="mini-tabbar">
+                  <span class="mini-tab active"></span>
+                  <span class="mini-tab"></span>
+                </div>
+                <div class="mini-toolbar"><span class="mini-bar"></span></div>
+                <div class="mini-canvas"><span class="mini-accent"></span></div>
+              </div>
+              <div class="theme-card-meta">
+                <span class="theme-card-title">Jasny</span>
+                <span class="theme-card-sub">Lodowcowy dzień</span>
+              </div>
+            </button>
+          </div>
+
+          <div class="group-box">
+            <label class="setting-row clickable" data-search="pasek zakładek widok">
+              <div>
+                <div class="row-title">Pasek zakładek</div>
+                <div class="row-desc">Wyświetlaj pasek szybkiego dostępu pod paskiem adresu (Ctrl+Shift+B).</div>
+              </div>
+              <input id="opt-bookmarks-bar" type="checkbox" class="peak-switch" />
+            </label>
+
+            <div class="setting-row" data-search="powiększenie zoom skala">
+              <div>
+                <div class="row-title">Domyślne powiększenie stron</div>
+                <div class="row-desc">Stosowane automatycznie dla nowo otwieranych kart.</div>
+              </div>
+              <select id="opt-default-zoom" class="peak-select compact">
+                <option value="0.8">80%</option>
+                <option value="0.9">90%</option>
+                <option value="1">100%</option>
+                <option value="1.1">110%</option>
+                <option value="1.25">125%</option>
+                <option value="1.5">150%</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Ochrona i reklamy -->
+        <section id="ochrona" class="settings-section" data-search="ochrona peak shield reklamy adblock filtry kosmetyczne youtube https tracking dnt gpc wyjątki zaufane">
+          <div class="section-head">
+            <h1>Ochrona i blokowanie reklam</h1>
+            <p>Wielowarstwowe filtrowanie sieciowe, ukrywanie banerów i ochrona przed śledzeniem.</p>
+          </div>
+
+          <div class="shield-summary-card">
+            <div class="shield-summary-top">
+              <div class="shield-status-block">
+                <span id="shield-status-dot" class="status-dot"></span>
+                <div>
+                  <div id="shield-status-title" class="shield-status-title">Peak Shield aktywny</div>
+                  <div id="shield-lists-summary" class="shield-lists-sub">EasyList · EasyPrivacy · Polskie filtry · uBlock · Peter Lowe</div>
+                </div>
+              </div>
+              <button id="btn-update-filters" type="button" class="secondary-btn">Aktualizuj filtry</button>
+            </div>
+            <div class="shield-metrics-row">
+              <div class="metric-item">
+                <span class="metric-label">Aktywne reguły</span>
+                <strong id="metric-rules">0</strong>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Zablokowano łącznie</span>
+                <strong id="metric-blocked">0</strong>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Ostatnia aktualizacja</span>
+                <strong id="metric-updated">—</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="group-box">
+            <div class="setting-row vertical" data-search="poziom ochrony wyłączony standardowy agresywny">
+              <div class="row-header-split">
+                <div>
+                  <div class="row-title">Poziom ochrony Peak Shield</div>
+                  <div id="shield-level-desc" class="row-desc">Blokuje wszystkie listy reklamowe, trackery, kryptokoparki i reklamy wideo.</div>
+                </div>
+              </div>
+              <div class="segmented-control" role="group" aria-label="Poziom ochrony">
+                <button type="button" class="seg-btn" data-shield-level="off">Wyłączony</button>
+                <button type="button" class="seg-btn" data-shield-level="standard">Standardowy</button>
+                <button type="button" class="seg-btn" data-shield-level="aggressive">Agresywny</button>
+              </div>
+            </div>
+
+            <label class="setting-row clickable" data-search="filtry kosmetyczne ukrywanie reklam banery youtube">
+              <div>
+                <div class="row-title">Filtry kosmetyczne i ukrywanie reklam</div>
+                <div class="row-desc">Usuwa puste boksy po reklamach, banery sponsorowane i nakładki na YouTube.</div>
+              </div>
+              <input id="opt-cosmetic" type="checkbox" class="peak-switch" />
+            </label>
+
+            <label class="setting-row clickable" data-search="https upgrade szyfrowanie połączenie">
+              <div>
+                <div class="row-title">Wymuszanie HTTPS (HTTPS-First)</div>
+                <div class="row-desc">Automatycznie przełącza adresy HTTP na szyfrowane HTTPS z bezpiecznym powrotem przy błędzie.</div>
+              </div>
+              <input id="opt-https-upgrade" type="checkbox" class="peak-switch" />
+            </label>
+
+            <label class="setting-row clickable" data-search="parametry śledzące utm fbclid gclid linki">
+              <div>
+                <div class="row-title">Usuwanie parametrów śledzących z URL</div>
+                <div class="row-desc">Czyści znaczniki typu utm_*, fbclid, gclid, msclkid podczas otwierania stron.</div>
+              </div>
+              <input id="opt-strip-params" type="checkbox" class="peak-switch" />
+            </label>
+
+            <label class="setting-row clickable" data-search="nagłówki prywatności gpc dnt referer">
+              <div>
+                <div class="row-title">Nagłówki prywatności i redukcja Referer</div>
+                <div class="row-desc">Wysyła Sec-GPC i DNT, usuwa X-Client-Data i skraca Referer między witrynami.</div>
+              </div>
+              <input id="opt-privacy-headers" type="checkbox" class="peak-switch" />
+            </label>
+
+            <label class="setting-row clickable" data-search="powiadomienia uprawnienia midi usb hid">
+              <div>
+                <div class="row-title">Blokowanie natrętnych powiadomień i urządzeń</div>
+                <div class="row-desc">Automatycznie odrzuca prośby o powiadomienia push oraz dostęp do MIDI, USB i HID.</div>
+              </div>
+              <input id="opt-block-notifications" type="checkbox" class="peak-switch" />
+            </label>
+          </div>
+
+          <div class="group-box" data-search="zaufane witryny wyjątki allowlist domeny">
+            <div class="setting-row vertical">
+              <div>
+                <div class="row-title">Zaufane witryny (wyjątki)</div>
+                <div class="row-desc">Dla tych domen Peak Shield oraz wymuszanie HTTPS będą wyłączone.</div>
+              </div>
+              <form id="allowlist-form" class="inline-form">
+                <input id="allowlist-input" type="text" placeholder="np. bank.pl lub example.com" autocomplete="off" />
+                <button type="submit" class="secondary-btn">Dodaj wyjątek</button>
+              </form>
+              <div id="allowlist-items" class="allowlist-items"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Wyszukiwarka -->
+        <section id="wyszukiwarka" class="settings-section" data-search="wyszukiwarka google duckduckgo brave bing szukaj">
+          <div class="section-head">
+            <h1>Wyszukiwarka</h1>
+            <p>Domyślny silnik używany w pasku adresu i na stronie nowej karty.</p>
+          </div>
+
+          <div class="engine-grid" role="radiogroup" aria-label="Domyślna wyszukiwarka">
+            <button type="button" class="engine-card" data-engine="google">
+              <div class="engine-title">Google</div>
+              <div class="engine-desc">Najszersze wyniki wyszukiwania i wysoka trafność lokalna.</div>
+            </button>
+            <button type="button" class="engine-card" data-engine="duckduckgo">
+              <div class="engine-title">DuckDuckGo</div>
+              <div class="engine-desc">Prywatne wyszukiwanie bez profilowania i historii zapytań.</div>
+            </button>
+            <button type="button" class="engine-card" data-engine="brave">
+              <div class="engine-title">Brave Search</div>
+              <div class="engine-desc">Niezależny indeks nastawiony na szybkość i prywatność.</div>
+            </button>
+            <button type="button" class="engine-card" data-engine="bing">
+              <div class="engine-title">Bing</div>
+              <div class="engine-desc">Wyszukiwarka Microsoftu z obsługą szybkich odpowiedzi.</div>
+            </button>
+          </div>
+        </section>
+
+        <!-- 4. Prywatność i dane -->
+        <section id="prywatnosc" class="settings-section" data-search="prywatność wyczyść dane historia cache cookies pamięć">
+          <div class="section-head">
+            <h1>Prywatność i dane przeglądania</h1>
+            <p>Wszystkie dane przeglądarki są przechowywane wyłącznie lokalnie na Twoim komputerze.</p>
+          </div>
+
+          <div class="group-box">
+            <label class="setting-row clickable">
+              <div>
+                <div class="row-title">Historia przeglądania</div>
+                <div class="row-desc">Lista ostatnio odwiedzanych adresów URL i tytułów stron.</div>
+              </div>
+              <input id="clear-history-cb" type="checkbox" class="peak-check" checked />
+            </label>
+            <label class="setting-row clickable">
+              <div>
+                <div class="row-title">Pamięć podręczna (cache)</div>
+                <div class="row-desc">Tymczasowe zasoby stron, obrazy i skrypty przyspieszające ładowanie.</div>
+              </div>
+              <input id="clear-cache-cb" type="checkbox" class="peak-check" checked />
+            </label>
+            <label class="setting-row clickable">
+              <div>
+                <div class="row-title">Pliki cookie i dane witryn</div>
+                <div class="row-desc">Sesje logowania oraz pamięć lokalna (LocalStorage) otwieranych stron.</div>
+              </div>
+              <input id="clear-cookies-cb" type="checkbox" class="peak-check" />
+            </label>
+            <div class="setting-row">
+              <span id="clear-feedback" class="feedback-msg"></span>
+              <button id="btn-clear-selected" type="button" class="danger-outline-btn">Wyczyść wybrane dane</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. Skróty i system -->
+        <section id="system" class="settings-section" data-search="skróty klawiszowe system devtools o programie wersja electron">
+          <div class="section-head">
+            <h1>Skróty klawiszowe i system</h1>
+            <p>Najważniejsze skróty nawigacyjne oraz informacje o wersji Peak Browser.</p>
+          </div>
+
+          <div class="group-box">
+            <div class="shortcuts-grid">
+              <div class="shortcut-item"><span>Nowa karta</span><kbd>Ctrl + T</kbd></div>
+              <div class="shortcut-item"><span>Zamknij kartę</span><kbd>Ctrl + W</kbd></div>
+              <div class="shortcut-item"><span>Przywróć zamkniętą kartę</span><kbd>Ctrl + Shift + T</kbd></div>
+              <div class="shortcut-item"><span>Przejdź do paska adresu</span><kbd>Ctrl + L</kbd></div>
+              <div class="shortcut-item"><span>Znajdź na stronie</span><kbd>Ctrl + F</kbd></div>
+              <div class="shortcut-item"><span>Dodaj zakładkę</span><kbd>Ctrl + D</kbd></div>
+              <div class="shortcut-item"><span>Historia przeglądania</span><kbd>Ctrl + H</kbd></div>
+              <div class="shortcut-item"><span>Pobrane pliki</span><kbd>Ctrl + J</kbd></div>
+              <div class="shortcut-item"><span>Ustawienia</span><kbd>Ctrl + ,</kbd></div>
+              <div class="shortcut-item"><span>Pasek zakładek</span><kbd>Ctrl + Shift + B</kbd></div>
+              <div class="shortcut-item"><span>Pełny ekran</span><kbd>F11</kbd></div>
+              <div class="shortcut-item"><span>Narzędzia deweloperskie</span><kbd>F12</kbd></div>
+            </div>
+          </div>
+
+          <div class="group-box about-box">
+            <div class="about-row">
+              <div class="about-identity">
+                <img src="peak://assets/icon-64.png" alt="Peak Browser" class="about-logo" />
+                <div>
+                  <div id="about-title" class="row-title">Peak Browser 1.2.0</div>
+                  <div id="about-engines" class="row-desc">Silnik Chromium · Windows x64</div>
+                </div>
+              </div>
+              <div class="about-buttons">
+                <button id="btn-open-devtools" type="button" class="secondary-btn">DevTools (F12)</button>
+                <button id="btn-open-website" type="button" class="secondary-btn">peakbrowser.vercel.app</button>
+                <button id="btn-open-releases" type="button" class="secondary-btn">Wydania GitHub</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="peak://settings/settings.js"></script>
+</body>
+</html>
