@@ -1,5 +1,41 @@
 [
   {
+    "tag": "v1.2.1",
+    "name": "Peak Browser 1.2.1 — Strona firmowa na start",
+    "publishedAt": "2026-11-21T11:14:00Z",
+    "body": "### Co się zmieniło w wersji 1.2.1\n\n- **Strona firmowa jako pierwsza karta startowa**: po uruchomieniu przeglądarki pierwsza karta automatycznie otwiera stronę firmową `https://peaklabstudio.vercel.app/#o-firmie`.\n- **Nowe karty bez zmian**: skrót `Ctrl+T` oraz przycisk `+` nadal otwierają czystą alpejską stronę nowej karty (`peak://newtab`).",
+    "htmlUrl": "https://github.com/latajoncy82-svg/peak-browser/releases/tag/v1.2.1",
+    "prerelease": false,
+    "assets": {
+      "installer": {
+        "name": "Peak-Browser-Setup-1.2.1.exe",
+        "size": 125380643,
+        "downloadUrl": "https://github.com/latajoncy82-svg/peak-browser/releases/download/v1.2.1/Peak-Browser-Setup-1.2.1.exe",
+        "downloadCount": 0
+      },
+      "portable": {
+        "name": "Peak-Browser-Portable-1.2.1.exe",
+        "size": 113978150,
+        "downloadUrl": "https://github.com/latajoncy82-svg/peak-browser/releases/download/v1.2.1/Peak-Browser-Portable-1.2.1.exe",
+        "downloadCount": 0
+      },
+      "all": [
+        {
+          "name": "Peak-Browser-Setup-1.2.1.exe",
+          "size": 125380643,
+          "downloadUrl": "https://github.com/latajoncy82-svg/peak-browser/releases/download/v1.2.1/Peak-Browser-Setup-1.2.1.exe",
+          "downloadCount": 0
+        },
+        {
+          "name": "Peak-Browser-Portable-1.2.1.exe",
+          "size": 113978150,
+          "downloadUrl": "https://github.com/latajoncy82-svg/peak-browser/releases/download/v1.2.1/Peak-Browser-Portable-1.2.1.exe",
+          "downloadCount": 0
+        }
+      ]
+    }
+  },
+  {
     "tag": "v1.2.0",
     "name": "Peak Browser 1.2.0 — Pełny Adblock, HTTPS-First i nowe Ustawienia",
     "publishedAt": "2026-11-20T23:35:00Z",

@@ -1,6 +1,4 @@
-### Co się zmieniło w wersji 1.2.0
+### Co się zmieniło w wersji 1.2.1
 
-- **Pełny silnik blokowania reklam Peak Shield (`148 604` reguły)**: wbudowany silnik `@ghostery/adblocker` oparty na listach EasyList, EasyPrivacy, Peter Lowe, uBlock Origin Filters & Privacy oraz Polskich filtrach reklamowych (`MajkiIT`) wraz z możliwością aktualizacji list jednym kliknięciem.
-- **Filtrowanie kosmetyczne i ochrona YouTube**: automatyczne ukrywanie pustych ramek po reklamach, blokowanie trackerów i skryptów koparek w trybie agresywnym oraz usuwanie banerów i nakładek reklamowych na YouTube.
-- **Wzmocniona ochrona prywatności**: wymuszanie szyfrowanych połączeń `HTTPS-First` z bezpiecznym powrotem przy błędzie certyfikatu, czyszczenie parametrów śledzących URL (`utm_*`, `fbclid`, `gclid`, `msclkid`), wysyłanie nagłówków `Sec-GPC` i `DNT`, usuwanie `X-Client-Data`, skracanie `Referer` między witrynami oraz automatyczne blokowanie natrętnych powiadomień push, USB, MIDI i HID.
-- **Przeprojektowane pełnoekranowe Ustawienia (`peak://settings`) i panel Ochrony**: dwukolumnowy układ z wyszukiwarką opcji, podglądem motywów na żywo, listą wyjątków dla witryn, podglądem zablokowanych domen w panelu `Ochrona` oraz granulowanym czyszczeniem historii, cookies i pamięci podręcznej.
+- **Strona firmowa jako pierwsza karta startowa**: po uruchomieniu przeglądarki pierwsza karta automatycznie otwiera stronę firmową `https://peaklabstudio.vercel.app/#o-firmie`.
+- **Nowe karty bez zmian**: skrót `Ctrl+T` oraz przycisk `+` nadal otwierają czystą alpejską stronę nowej karty (`peak://newtab`).

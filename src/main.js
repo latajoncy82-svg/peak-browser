@@ -22,6 +22,7 @@ const shield = require('./shield');
 const APP_ID = 'com.peakbrowser.app';
 const NEWTAB_URL = 'peak://newtab';
 const SETTINGS_URL = 'peak://settings';
+const STARTUP_URL = 'https://peaklabstudio.vercel.app/#o-firmie';
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PAGES_DIR = path.join(__dirname, 'pages');
 const ASSETS_DIR = path.join(ROOT_DIR, 'assets');
@@ -1686,7 +1687,7 @@ function createMainWindow() {
 
   mainWindow.loadFile(path.join(__dirname, 'chrome', 'index.html'));
   mainWindow.webContents.once('did-finish-load', () => {
-    createTab(NEWTAB_URL, true);
+    createTab(STARTUP_URL, true);
     broadcastData();
     broadcastWindowState();
   });
@@ -1811,11 +1812,18 @@ async function runVerificationSuite(verifyDir) {
     );
   };
 
-  // 1. Initial default alpine-dark New Tab
+  // 1. Initial startup tab (company page)
   await new Promise((r) => setTimeout(r, 700));
   const initialTab = getActiveTab();
   await waitForTabLoad(initialTab);
-  await capturePair('1-newtab-dark');
+  await new Promise((r) => setTimeout(r, 500));
+  const startupUrl = initialTab.url;
+  const startupTitle = initialTab.title;
+  assert.ok(
+    startupUrl.startsWith('https://peaklabstudio.vercel.app') && startupUrl.includes('#o-firmie'),
+    `Startup tab should open company page #o-firmie, got: ${startupUrl}`
+  );
+  await capturePair('1-startup-company');
 
   // 2. Open full-page Settings (peak://settings) via gear button
   await mainWindow.webContents.executeJavaScript(`
@@ -1863,7 +1871,7 @@ async function runVerificationSuite(verifyDir) {
   await capturePair('4-shield-drawer');
   fs.writeFileSync(
     path.join(verifyDir, 'summary.json'),
-    JSON.stringify({ ok: true, verifyChromeState, shieldInfo: shield.getShieldInfo() }, null, 2)
+    JSON.stringify({ ok: true, startupUrl, startupTitle, verifyChromeState, shieldInfo: shield.getShieldInfo() }, null, 2)
   );
 }
 
