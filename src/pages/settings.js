@@ -42,15 +42,86 @@
     clearCookiesCb: document.getElementById('clear-cookies-cb'),
     btnClearSelected: document.getElementById('btn-clear-selected'),
     clearFeedback: document.getElementById('clear-feedback'),
+    btnOpenIncognito: document.getElementById('btn-open-incognito'),
+
+    importBrowserSelect: document.getElementById('import-browser-select'),
+    btnRefreshBrowsers: document.getElementById('btn-refresh-browsers'),
+    importBookmarksCb: document.getElementById('import-bookmarks-cb'),
+    importHistoryCb: document.getElementById('import-history-cb'),
+    importSpeedDialCb: document.getElementById('import-speeddial-cb'),
+    btnRunImport: document.getElementById('btn-run-import'),
+    btnImportHtml: document.getElementById('btn-import-html'),
+    importFeedback: document.getElementById('import-feedback'),
 
     aboutTitle: document.getElementById('about-title'),
     aboutEngines: document.getElementById('about-engines'),
     btnOpenDevtools: document.getElementById('btn-open-devtools'),
     btnOpenWebsite: document.getElementById('btn-open-website'),
+    btnOpenMobile: document.getElementById('btn-open-mobile'),
     btnOpenReleases: document.getElementById('btn-open-releases')
   };
 
   let state = null;
+  let detectedBrowsers = [];
+
+  function setImportFeedback(msg, isError = false) {
+    if (!el.importFeedback) return;
+    el.importFeedback.textContent = msg || '';
+    el.importFeedback.classList.toggle('error', Boolean(isError));
+  }
+
+  async function loadDetectedBrowsers() {
+    if (!window.peakSettings || !el.importBrowserSelect) return;
+    try {
+      const list = await window.peakSettings.detectBrowsers();
+      detectedBrowsers = Array.isArray(list) ? list : [];
+    } catch {
+      detectedBrowsers = [];
+    }
+
+    el.importBrowserSelect.replaceChildren();
+    if (detectedBrowsers.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Nie wykryto lokalnych profili — użyj pliku HTML zakładek';
+      el.importBrowserSelect.appendChild(opt);
+      el.btnRunImport.disabled = true;
+      return;
+    }
+
+    for (const item of detectedBrowsers) {
+      const opt = document.createElement('option');
+      opt.value = item.id;
+      const caps = [item.hasBookmarks ? 'zakładki' : null, item.hasHistory ? 'historia' : null]
+        .filter(Boolean)
+        .join(', ');
+      opt.textContent = caps ? `${item.label} — ${caps}` : item.label;
+      el.importBrowserSelect.appendChild(opt);
+    }
+    el.btnRunImport.disabled = false;
+  }
+
+  function formatImportResult(res) {
+    if (!res || !res.ok) {
+      setImportFeedback((res && res.error) || 'Nie udało się zaimportować danych.', true);
+      return;
+    }
+    const parts = [];
+    if (res.bookmarksAdded > 0 || res.bookmarksSkipped > 0) {
+      parts.push(`zakładki: +${res.bookmarksAdded}`);
+    }
+    if (res.historyAdded > 0) {
+      parts.push(`historia: +${res.historyAdded}`);
+    }
+    if (res.speedDialAdded > 0) {
+      parts.push(`skróty Nowej karty: +${res.speedDialAdded}`);
+    }
+    if (parts.length === 0) {
+      setImportFeedback(`Dane z ${res.sourceLabel} są już aktualne (brak nowych pozycji).`, false);
+    } else {
+      setImportFeedback(`Zaimportowano z ${res.sourceLabel} (${parts.join(' · ')}).`, false);
+    }
+  }
 
   function formatNumber(n) {
     return Number(n || 0).toLocaleString('pl-PL');
@@ -247,9 +318,65 @@
       }, 2600);
     });
 
+    el.btnOpenIncognito.addEventListener('click', () => window.peakSettings.openIncognito());
+
+    el.btnRefreshBrowsers.addEventListener('click', () => {
+      loadDetectedBrowsers();
+      setImportFeedback('Odświeżono listę przeglądarek.', false);
+    });
+
+    el.btnRunImport.addEventListener('click', async () => {
+      const sourceId = el.importBrowserSelect.value;
+      const bookmarks = el.importBookmarksCb.checked;
+      const history = el.importHistoryCb.checked;
+      const speedDial = el.importSpeedDialCb.checked;
+      if (!sourceId) {
+        setImportFeedback('Wybierz profil źródłowej przeglądarki lub plik HTML.', true);
+        return;
+      }
+      if (!bookmarks && !history) {
+        setImportFeedback('Zaznacz przynajmniej zakładki lub historię do przeniesienia.', true);
+        return;
+      }
+      el.btnRunImport.disabled = true;
+      el.btnRunImport.textContent = 'Importowanie…';
+      setImportFeedback('', false);
+      try {
+        const res = await window.peakSettings.importBrowser({
+          sourceId,
+          bookmarks,
+          history,
+          speedDial
+        });
+        formatImportResult(res);
+      } catch {
+        setImportFeedback('Wystąpił błąd podczas importu danych.', true);
+      } finally {
+        el.btnRunImport.disabled = false;
+        el.btnRunImport.textContent = 'Importuj dane';
+      }
+    });
+
+    el.btnImportHtml.addEventListener('click', async () => {
+      el.btnImportHtml.disabled = true;
+      try {
+        const res = await window.peakSettings.importHtmlBookmarks();
+        if (res && !res.canceled) {
+          formatImportResult(res);
+        }
+      } catch {
+        setImportFeedback('Nie udało się zaimportować pliku HTML.', true);
+      } finally {
+        el.btnImportHtml.disabled = false;
+      }
+    });
+
     el.btnOpenDevtools.addEventListener('click', () => window.peakSettings.openDevTools());
     el.btnOpenWebsite.addEventListener('click', () =>
       window.peakSettings.openExternal('https://peakbrowser.vercel.app/')
+    );
+    el.btnOpenMobile.addEventListener('click', () =>
+      window.peakSettings.openExternal('https://peakbrowser.vercel.app/#telefon')
     );
     el.btnOpenReleases.addEventListener('click', () =>
       window.peakSettings.openExternal('https://github.com/latajoncy82-svg/peak-browser/releases')
@@ -261,6 +388,7 @@
     if (window.peakSettings) {
       state = await window.peakSettings.getState();
       render();
+      loadDetectedBrowsers();
       if (window.location.hash) {
         applySectionFromHash();
       }

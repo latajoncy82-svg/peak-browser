@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="obsidian">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self' peak:; img-src 'self' peak: data:; style-src 'self' peak:; script-src 'self' peak:;"
+  />
+  <title>Karta Incognito</title>
+  <link rel="stylesheet" href="peak://incognito/incognito.css" />
+</head>
+<body>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <main class="stage">
+    <section class="incognito-card">
+      <div class="hero-icon-wrap" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 14h22M8 14l2.2-6.5a2 2 0 0 1 1.9-1.3h7.8a2 2 0 0 1 1.9 1.3L24 14" />
+          <circle cx="11" cy="21" r="3.6" />
+          <circle cx="21" cy="21" r="3.6" />
+          <path d="M14.5 20.6c.9-.5 2.1-.5 3 0" />
+        </svg>
+      </div>
+
+      <span class="mode-badge">Tryb prywatny · Zero śladów lokalnych</span>
+      <h1>Przeglądasz w trybie Incognito</h1>
+      <p class="subtitle">
+        Karty Incognito działają w odizolowanej sesji w pamięci RAM i nie zostawiają śladu na tym urządzeniu.
+      </p>
+
+      <form id="incognito-search-form" class="search-bar" autocomplete="off">
+        <svg class="search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="7.2" cy="7.2" r="4.5" />
+          <path d="M10.6 10.6L13.7 13.7" />
+        </svg>
+        <input
+          id="incognito-search-input"
+          class="search-input"
+          type="text"
+          placeholder="Szukaj prywatnie lub wpisz adres URL"
+          autofocus
+        />
+        <button type="submit" class="search-submit" title="Przejdź" aria-label="Szukaj">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.5 8h9M9 4.5L12.5 8 9 11.5" />
+          </svg>
+        </button>
+      </form>
+
+      <div class="guarantees-grid">
+        <article class="guarantee-item">
+          <h3>Brak historii na dysku</h3>
+          <p>Odwiedzone adresy, tytuły stron oraz lista ostatnio zamkniętych kart nigdy nie są zapisywane.</p>
+        </article>
+        <article class="guarantee-item">
+          <h3>Czyszczenie po zamknięciu</h3>
+          <p>Pliki cookie, pamięć podręczna oraz dane witryn są usuwane automatycznie po zamknięciu kart Incognito.</p>
+        </article>
+        <article class="guarantee-item">
+          <h3>Pełna ochrona Peak Shield</h3>
+          <p>Blokowanie reklam (148 604 reguły), HTTPS-First, Sec-GPC i usuwanie trackerów URL pozostają aktywne.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script src="peak://incognito/incognito.js"></script>
+</body>
+</html>

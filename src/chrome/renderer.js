@@ -42,6 +42,7 @@
     reloadIcon: document.getElementById('reload-icon'),
 
     omnibox: document.getElementById('omnibox'),
+    incognitoPill: document.getElementById('incognito-pill'),
     omniboxDisplay: document.getElementById('omnibox-display'),
     omniboxInput: document.getElementById('omnibox-input'),
     omniboxSecurity: document.getElementById('omnibox-security'),
@@ -55,6 +56,7 @@
     btnBookmark: document.getElementById('btn-bookmark'),
 
     btnShield: document.getElementById('btn-shield'),
+    btnIncognito: document.getElementById('btn-incognito'),
     shieldBadge: document.getElementById('shield-badge'),
     btnDownloads: document.getElementById('btn-downloads'),
     downloadsDot: document.getElementById('downloads-dot'),
@@ -94,6 +96,7 @@
     bookmarksFilter: document.getElementById('bookmarks-filter'),
     bookmarksList: document.getElementById('bookmarks-list'),
     toggleBookmarksBarInline: document.getElementById('toggle-bookmarks-bar-inline'),
+    btnImportBookmarksDrawer: document.getElementById('btn-import-bookmarks-drawer'),
 
     historyFilter: document.getElementById('history-filter'),
     historyList: document.getElementById('history-list'),
@@ -191,7 +194,7 @@
     const fragment = document.createDocumentFragment();
     state.tabs.forEach((tab, index) => {
       const btn = document.createElement('div');
-      btn.className = `tab${tab.id === state.activeTabId ? ' active' : ''}`;
+      btn.className = `tab${tab.id === state.activeTabId ? ' active' : ''}${tab.isIncognito ? ' incognito' : ''}`;
       btn.setAttribute('role', 'tab');
       btn.draggable = true;
       btn.dataset.tabId = tab.id;
@@ -249,6 +252,9 @@
         const spin = document.createElement('span');
         spin.className = 'tab-spinner';
         iconWrap.appendChild(spin);
+      } else if (tab.url && tab.url.startsWith('peak://incognito')) {
+        iconWrap.innerHTML =
+          '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M2.2 7.2h11.6M4 7.2l1.1-3.3a1 1 0 0 1 .95-.7h3.9a1 1 0 0 1 .95.7L12 7.2"/><circle cx="5.4" cy="10.8" r="1.9"/><circle cx="10.6" cy="10.8" r="1.9"/></svg>';
       } else if (tab.url && tab.url.startsWith('peak://')) {
         const img = document.createElement('img');
         img.className = 'tab-favicon';
@@ -265,6 +271,9 @@
             '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" style="width:13px;height:13px;opacity:0.7"><circle cx="8" cy="8" r="5.3"/><path d="M2.8 8h10.4"/></svg>';
         };
         iconWrap.appendChild(img);
+      } else if (tab.isIncognito) {
+        iconWrap.innerHTML =
+          '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M2.2 7.2h11.6M4 7.2l1.1-3.3a1 1 0 0 1 .95-.7h3.9a1 1 0 0 1 .95.7L12 7.2"/><circle cx="5.4" cy="10.8" r="1.9"/><circle cx="10.6" cy="10.8" r="1.9"/></svg>';
       } else {
         iconWrap.innerHTML =
           '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" style="width:13px;height:13px;opacity:0.7"><circle cx="8" cy="8" r="5.3"/><path d="M2.8 8h10.4"/></svg>';
@@ -310,6 +319,11 @@
   function renderToolbar() {
     const tab = getActiveTab();
     if (!tab) return;
+
+    const incognito = Boolean(tab.isIncognito);
+    document.documentElement.dataset.incognito = incognito ? 'true' : 'false';
+    el.incognitoPill.classList.toggle('hidden', !incognito);
+    el.btnIncognito.classList.toggle('active', incognito);
 
     el.btnBack.disabled = !tab.canGoBack;
     el.btnForward.disabled = !tab.canGoForward;
@@ -754,9 +768,16 @@
       }
     });
 
+    el.btnIncognito.addEventListener('click', () => window.peak.newIncognitoTab());
     el.btnShield.addEventListener('click', () => openDrawer('shield'));
     el.btnDownloads.addEventListener('click', () => openDrawer('downloads'));
     el.btnLibrary.addEventListener('click', () => openDrawer('bookmarks'));
+    el.btnImportBookmarksDrawer.addEventListener('click', () => {
+      state.drawerPanel = null;
+      renderDrawer();
+      syncLayout();
+      window.peak.openSettings('#import');
+    });
     el.btnSettings.addEventListener('click', () => {
       if (state.drawerPanel) {
         state.drawerPanel = null;

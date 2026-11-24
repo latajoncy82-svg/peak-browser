@@ -9,6 +9,8 @@
     heroMetaKicker: document.getElementById('hero-meta-kicker'),
     primaryDownloadBtn: document.getElementById('primary-download-btn'),
     primaryDownloadMeta: document.getElementById('primary-download-meta'),
+    androidDownloadBtn: document.getElementById('android-download-btn'),
+    androidDownloadMeta: document.getElementById('android-download-meta'),
     downloadMenuWrap: document.getElementById('download-menu-wrap'),
     downloadMenuToggle: document.getElementById('download-menu-toggle'),
     downloadDropdown: document.getElementById('download-dropdown'),
@@ -16,6 +18,10 @@
     menuInstallerSize: document.getElementById('menu-installer-size'),
     menuPortableLink: document.getElementById('menu-portable-link'),
     menuPortableSize: document.getElementById('menu-portable-size'),
+    menuAndroidLink: document.getElementById('menu-android-link'),
+    menuAndroidSize: document.getElementById('menu-android-size'),
+    mobileSectionApkBtn: document.getElementById('mobile-section-apk-btn'),
+    mobileSectionApkMeta: document.getElementById('mobile-section-apk-meta'),
     menuGithubReleases: document.getElementById('menu-github-releases'),
 
     previewTabs: Array.from(document.querySelectorAll('.preview-tab')),
@@ -140,14 +146,15 @@
 
   function populateHeroDownload(latest) {
     if (!latest) return;
-    const tag = latest.tag || 'v1.0.0';
+    const tag = latest.tag || 'v1.3.0';
     const installer = latest.assets && latest.assets.installer;
     const portable = latest.assets && latest.assets.portable;
+    const android = latest.assets && latest.assets.android;
 
     const primaryUrl = (installer && installer.downloadUrl) || (portable && portable.downloadUrl) || latest.htmlUrl || DEFAULT_RELEASES_URL;
     const primarySize = installer && installer.size ? formatSize(installer.size) : '';
 
-    el.heroMetaKicker.textContent = `Windows 10 / 11 (64-bit) · Wersja ${tag}`;
+    el.heroMetaKicker.textContent = `Windows 10 / 11 · Android 8+ · Wersja ${tag}`;
     el.primaryDownloadBtn.href = primaryUrl;
     el.primaryDownloadMeta.textContent = primarySize ? `${tag} · ${primarySize}` : tag;
 
@@ -156,6 +163,15 @@
 
     el.menuPortableLink.href = (portable && portable.downloadUrl) || latest.htmlUrl || DEFAULT_RELEASES_URL;
     el.menuPortableSize.textContent = formatSize(portable && portable.size);
+
+    const apkUrl = (android && android.downloadUrl) || '#telefon';
+    const apkSize = android && android.size ? formatSize(android.size) : 'APK';
+    if (el.menuAndroidLink) el.menuAndroidLink.href = apkUrl;
+    if (el.menuAndroidSize) el.menuAndroidSize.textContent = apkSize;
+    if (el.androidDownloadBtn) el.androidDownloadBtn.href = apkUrl;
+    if (el.androidDownloadMeta) el.androidDownloadMeta.textContent = apkSize;
+    if (el.mobileSectionApkBtn) el.mobileSectionApkBtn.href = (android && android.downloadUrl) || DEFAULT_RELEASES_URL;
+    if (el.mobileSectionApkMeta) el.mobileSectionApkMeta.textContent = android && android.size ? `${tag} · ${apkSize}` : tag;
 
     el.menuGithubReleases.href = DEFAULT_RELEASES_URL;
   }
@@ -214,6 +230,7 @@
 
       const installer = rel.assets && rel.assets.installer;
       const portable = rel.assets && rel.assets.portable;
+      const android = rel.assets && rel.assets.android;
 
       if (installer && installer.downloadUrl) {
         const link = document.createElement('a');
@@ -237,6 +254,19 @@
         const size = document.createElement('span');
         size.className = 'dl-chip-size';
         size.textContent = formatSize(portable.size);
+        link.append(label, size);
+        downloadsRow.appendChild(link);
+      }
+
+      if (android && android.downloadUrl) {
+        const link = document.createElement('a');
+        link.className = 'dl-chip android';
+        link.href = android.downloadUrl;
+        const label = document.createElement('span');
+        label.textContent = 'Android (.apk)';
+        const size = document.createElement('span');
+        size.className = 'dl-chip-size';
+        size.textContent = formatSize(android.size);
         link.append(label, size);
         downloadsRow.appendChild(link);
       }

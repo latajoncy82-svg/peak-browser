@@ -1,0 +1,207 @@
+:root {
+  color-scheme: dark;
+  --font-ui: 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --bg: #080A14;
+  --surface: rgba(18, 22, 40, 0.88);
+  --surface-card: rgba(24, 29, 52, 0.78);
+  --border: rgba(154, 146, 255, 0.16);
+  --border-strong: rgba(154, 146, 255, 0.34);
+  --text: #EEF1FF;
+  --text-muted: #98A2C4;
+  --accent: #8B7BFF;
+  --accent-blue: #5EA6FF;
+  --accent-soft: rgba(139, 123, 255, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+.ambient-glow {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(139, 123, 255, 0.19) 0%, rgba(139, 123, 255, 0) 52%),
+    radial-gradient(circle at 80% 75%, rgba(56, 152, 255, 0.11) 0%, rgba(56, 152, 255, 0) 48%),
+    linear-gradient(180deg, #070912 0%, #0C1020 100%);
+}
+
+.stage {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 24px;
+}
+
+.incognito-card {
+  width: 100%;
+  max-width: 780px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.hero-icon-wrap {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(139, 123, 255, 0.22), rgba(56, 152, 255, 0.12));
+  border: 1px solid var(--border-strong);
+  color: #C7BFFF;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+.hero-icon-wrap svg {
+  width: 34px;
+  height: 34px;
+}
+
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid var(--border-strong);
+  color: #CFC8FF;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+h1 {
+  font-size: clamp(24px, 3vw, 31px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  max-width: 560px;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.search-bar {
+  width: 100%;
+  max-width: 560px;
+  height: 46px;
+  margin-top: 6px;
+  padding: 0 6px 0 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  backdrop-filter: blur(18px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.search-bar:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(139, 123, 255, 0.18);
+}
+
+.search-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-submit {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #FFFFFF;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: filter 0.12s ease;
+}
+
+.search-submit:hover {
+  filter: brightness(1.1);
+}
+
+.search-submit svg {
+  width: 15px;
+  height: 15px;
+}
+
+.guarantees-grid {
+  margin-top: 14px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  text-align: left;
+}
+
+.guarantee-item {
+  padding: 15px 16px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--surface-card);
+  backdrop-filter: blur(14px);
+}
+
+.guarantee-item h3 {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.guarantee-item p {
+  margin-top: 5px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .guarantees-grid {
+    grid-template-columns: 1fr;
+  }
+}

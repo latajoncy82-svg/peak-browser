@@ -59,6 +59,13 @@
           </svg>
           <span>Prywatność i dane</span>
         </a>
+        <a href="#import" class="rail-link" data-section="import">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2.5v7.2M5.2 7L8 9.8 10.8 7" />
+            <path d="M3 11.8v1.2a.9.9 0 0 0 .9.9h8.2a.9.9 0 0 0 .9-.9v-1.2" />
+          </svg>
+          <span>Import danych</span>
+        </a>
         <a href="#system" class="rail-link" data-section="system">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="8" cy="8" r="2.2" />
@@ -318,6 +325,66 @@
               <button id="btn-clear-selected" type="button" class="danger-outline-btn">Wyczyść wybrane dane</button>
             </div>
           </div>
+
+          <div class="group-box" data-search="incognito tryb prywatny sesja bez historii">
+            <div class="setting-row">
+              <div>
+                <div class="row-title">Tryb Incognito</div>
+                <div class="row-desc">Odizolowana karta prywatna bez zapisywania historii, zakładek i plików cookie po zamknięciu.</div>
+              </div>
+              <button id="btn-open-incognito" type="button" class="secondary-btn">Otwórz Incognito (Ctrl+Shift+N)</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. Przenoszenie danych z innej przeglądarki -->
+        <section id="import" class="settings-section" data-search="import przeniesienie danych chrome edge brave opera firefox html zakładki historia">
+          <div class="section-head">
+            <h1>Przenoszenie danych z innej przeglądarki</h1>
+            <p>Zaimportuj zakładki, historię i skróty z Chrome, Edge, Brave, Opera, Firefox lub pliku HTML.</p>
+          </div>
+
+          <div class="group-box">
+            <div class="setting-row vertical">
+              <div class="row-title">Wybierz źródłową przeglądarkę i profil</div>
+              <div class="import-source-row">
+                <select id="import-browser-select" class="peak-select import-select"></select>
+                <button id="btn-refresh-browsers" type="button" class="secondary-btn">Odśwież</button>
+              </div>
+            </div>
+
+            <label class="setting-row clickable">
+              <div>
+                <div class="row-title">Zakładki i ulubione</div>
+                <div class="row-desc">Kopiuje zapisane zakładki bez tworzenia duplikatów.</div>
+              </div>
+              <input id="import-bookmarks-cb" type="checkbox" class="peak-check" checked />
+            </label>
+
+            <label class="setting-row clickable">
+              <div>
+                <div class="row-title">Historia przeglądania</div>
+                <div class="row-desc">Przenosi do 500 ostatnich odwiedzonych stron z wybranego profilu.</div>
+              </div>
+              <input id="import-history-cb" type="checkbox" class="peak-check" checked />
+            </label>
+
+            <label class="setting-row clickable">
+              <div>
+                <div class="row-title">Dodaj wybrane zakładki do Nowej karty</div>
+                <div class="row-desc">Uzupełnia skróty szybkiego dostępu o najważniejsze strony z paska zakładek.</div>
+              </div>
+              <input id="import-speeddial-cb" type="checkbox" class="peak-check" />
+            </label>
+
+            <div class="setting-row import-actions-row">
+              <div class="import-btn-cluster">
+                <button id="btn-run-import" type="button" class="primary-btn">Importuj dane</button>
+                <button id="btn-import-html" type="button" class="secondary-btn">Importuj zakładki z pliku HTML…</button>
+              </div>
+              <span id="import-feedback" class="feedback-msg"></span>
+            </div>
+          </div>
         </section>
 
         <!-- 5. Skróty i system -->
@@ -330,6 +397,8 @@
           <div class="group-box">
             <div class="shortcuts-grid">
               <div class="shortcut-item"><span>Nowa karta</span><kbd>Ctrl + T</kbd></div>
+              <div class="shortcut-item"><span>Nowa karta Incognito</span><kbd>Ctrl + Shift + N</kbd></div>
+              <div class="shortcut-item"><span>Odśwież stronę</span><kbd>Ctrl + R</kbd></div>
               <div class="shortcut-item"><span>Zamknij kartę</span><kbd>Ctrl + W</kbd></div>
               <div class="shortcut-item"><span>Przywróć zamkniętą kartę</span><kbd>Ctrl + Shift + T</kbd></div>
               <div class="shortcut-item"><span>Przejdź do paska adresu</span><kbd>Ctrl + L</kbd></div>
@@ -349,13 +418,14 @@
               <div class="about-identity">
                 <img src="peak://assets/icon-64.png" alt="Peak Browser" class="about-logo" />
                 <div>
-                  <div id="about-title" class="row-title">Peak Browser 1.2.0</div>
+                  <div id="about-title" class="row-title">Peak Browser 1.3.0</div>
                   <div id="about-engines" class="row-desc">Silnik Chromium · Windows x64</div>
                 </div>
               </div>
               <div class="about-buttons">
                 <button id="btn-open-devtools" type="button" class="secondary-btn">DevTools (F12)</button>
                 <button id="btn-open-website" type="button" class="secondary-btn">peakbrowser.vercel.app</button>
+                <button id="btn-open-mobile" type="button" class="secondary-btn">Na telefon (Android)</button>
                 <button id="btn-open-releases" type="button" class="secondary-btn">Wydania GitHub</button>
               </div>
             </div>

@@ -18,9 +18,11 @@ const {
 
 const store = require('./store');
 const shield = require('./shield');
+const importer = require('./importer');
 
 const APP_ID = 'com.peakbrowser.app';
 const NEWTAB_URL = 'peak://newtab';
+const INCOGNITO_URL = 'peak://incognito';
 const SETTINGS_URL = 'peak://settings';
 const STARTUP_URL = 'https://peaklabstudio.vercel.app/#o-firmie';
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -63,6 +65,7 @@ const SEARCH_ENGINES = {
 
 let mainWindow = null;
 let peakSession = null;
+let incognitoSession = null;
 let omniboxView = null;
 let omniboxVisible = false;
 let omniboxRect = null;
@@ -156,6 +159,13 @@ function resolvePeakFile(requestUrl) {
     return safeResolveInDir(PAGES_DIR, pathname);
   }
 
+  if (host === 'incognito') {
+    if (pathname === '/' || pathname === '') {
+      return path.join(PAGES_DIR, 'incognito.html');
+    }
+    return safeResolveInDir(PAGES_DIR, pathname);
+  }
+
   if (host === 'settings') {
     if (pathname === '/' || pathname === '') {
       return path.join(PAGES_DIR, 'settings.html');
@@ -215,7 +225,8 @@ function serializeTab(tab) {
     zoomFactor: tab.zoomFactor,
     blockedCount: tab.blockedCount,
     blockedDomains,
-    isSecure: tab.isSecure
+    isSecure: tab.isSecure,
+    isIncognito: Boolean(tab.isIncognito)
   };
 }
 
@@ -412,6 +423,10 @@ function updateTabUrlMeta(tab, url) {
     tab.displayUrl = '';
     tab.title = 'Nowa karta';
     tab.isSecure = true;
+  } else if (url.startsWith('peak://incognito')) {
+    tab.displayUrl = '';
+    tab.title = 'Karta Incognito';
+    tab.isSecure = true;
   } else if (url.startsWith('peak://settings')) {
     tab.displayUrl = 'peak://settings';
     tab.title = 'Ustawienia';
@@ -453,6 +468,10 @@ function handleAppShortcut(input, sourceWebContents) {
 
   if (ctrl && !shift && key === 't') {
     createTab(NEWTAB_URL, true);
+    return true;
+  }
+  if (ctrl && shift && key === 'n') {
+    createTab(INCOGNITO_URL, true, { incognito: true });
     return true;
   }
   if (ctrl && shift && key === 't') {
@@ -593,7 +612,11 @@ function attachTabContextMenu(tab) {
       template.push(
         {
           label: 'Otwórz link w nowej karcie',
-          click: () => createTab(params.linkURL, true)
+          click: () => createTab(params.linkURL, true, { incognito: tab.isIncognito })
+        },
+        {
+          label: 'Otwórz link w karcie Incognito',
+          click: () => createTab(params.linkURL, true, { incognito: true })
         },
         {
           label: 'Kopiuj adres linku',
@@ -607,7 +630,7 @@ function attachTabContextMenu(tab) {
       template.push(
         {
           label: 'Otwórz obraz w nowej karcie',
-          click: () => createTab(params.srcURL, true)
+          click: () => createTab(params.srcURL, true, { incognito: tab.isIncognito })
         },
         {
           label: 'Zapisz obraz jako...',
@@ -634,7 +657,7 @@ function attachTabContextMenu(tab) {
           label: `Szukaj „${preview}” w wyszukiwarce`,
           click: () => {
             const url = getSearchUrl(selected, store.getSettings().searchEngine);
-            createTab(url, true);
+            createTab(url, true, { incognito: tab.isIncognito });
           }
         },
         { type: 'separator' }
@@ -693,8 +716,8 @@ function wireTabEvents(tab) {
           icon: ICON_ICO_PATH,
           title: 'Peak Browser',
           autoHideMenuBar: true,
-          webPreferences: {
-            session: peakSession,
+        webPreferences: {
+            session: tab.isIncognito ? incognitoSession : peakSession,
             contextIsolation: true,
             nodeIntegration: false,
             sandbox: true
@@ -703,7 +726,7 @@ function wireTabEvents(tab) {
       };
     }
     if (details.url) {
-      createTab(details.url, true);
+      createTab(details.url, true, { incognito: tab.isIncognito });
     }
     return { action: 'deny' };
   });
@@ -724,7 +747,7 @@ function wireTabEvents(tab) {
     tab.blockedDomains = new Map();
     updateTabUrlMeta(tab, url);
     updateTabNavState(tab);
-    if (!isPeakPageUrl(url)) {
+    if (!isPeakPageUrl(url) && !tab.isIncognito) {
       store.recordHistory({ url, title: tab.title });
       broadcastData();
     }
@@ -743,7 +766,7 @@ function wireTabEvents(tab) {
     if (host === 'youtube.com' || host.endsWith('.youtube.com')) {
       injectPageProtections(tab);
     }
-    if (!isPeakPageUrl(url)) {
+    if (!isPeakPageUrl(url) && !tab.isIncognito) {
       store.recordHistory({ url, title: tab.title });
       broadcastData();
     }
@@ -754,7 +777,7 @@ function wireTabEvents(tab) {
     if (!tab.url.startsWith('peak://error')) {
       tab.title = title || tab.title || 'Nowa karta';
     }
-    if (!isPeakPageUrl(tab.url)) {
+    if (!isPeakPageUrl(tab.url) && !tab.isIncognito) {
       store.recordHistory({ url: tab.url, title: tab.title });
       broadcastData();
     }
@@ -824,12 +847,13 @@ function wireTabEvents(tab) {
   });
 }
 
-function createTab(initialUrl = NEWTAB_URL, activate = true) {
+function createTab(initialUrl = NEWTAB_URL, activate = true, options = {}) {
   const id = `tab-${nextTabSeq++}`;
+  const isIncognito = Boolean(options && options.incognito);
   const defaultZoom = store.getSettings().defaultZoom || 1;
   const view = new WebContentsView({
     webPreferences: {
-      session: peakSession,
+      session: isIncognito ? incognitoSession : peakSession,
       preload: path.join(__dirname, 'preload-newtab.js'),
       contextIsolation: true,
       nodeIntegration: false,
@@ -840,9 +864,15 @@ function createTab(initialUrl = NEWTAB_URL, activate = true) {
   const tab = {
     id,
     view,
+    isIncognito,
     url: initialUrl,
-    displayUrl: initialUrl === NEWTAB_URL ? '' : initialUrl,
-    title: initialUrl === NEWTAB_URL ? 'Nowa karta' : 'Ładowanie…',
+    displayUrl: initialUrl === NEWTAB_URL || initialUrl === INCOGNITO_URL ? '' : initialUrl,
+    title:
+      initialUrl === NEWTAB_URL
+        ? 'Nowa karta'
+        : initialUrl === INCOGNITO_URL
+          ? 'Karta Incognito'
+          : 'Ładowanie…',
     favicon: '',
     isLoading: true,
     canGoBack: false,
@@ -913,7 +943,7 @@ function closeTab(tabId) {
   if (idx === -1) return;
 
   const [removed] = tabs.splice(idx, 1);
-  if (removed.url && !isPeakPageUrl(removed.url)) {
+  if (removed.url && !isPeakPageUrl(removed.url) && !removed.isIncognito) {
     closedTabsStack.push(removed.url);
     if (closedTabsStack.length > 20) {
       closedTabsStack.shift();
@@ -929,6 +959,11 @@ function closeTab(tabId) {
   }
   if (!removed.view.webContents.isDestroyed()) {
     removed.view.webContents.close();
+  }
+
+  if (removed.isIncognito && incognitoSession && tabs.every((t) => !t.isIncognito)) {
+    incognitoSession.clearStorageData().catch(() => {});
+    incognitoSession.clearCache().catch(() => {});
   }
 
   if (tabs.length === 0) {
@@ -1057,18 +1092,16 @@ function openSettingsTab(section = '') {
   return created.id;
 }
 
-function setupSession() {
-  peakSession = session.fromPartition('persist:peak');
-  const cleanUA = peakSession
+function configureSessionProtections(targetSession, { isIncognito = false } = {}) {
+  const cleanUA = targetSession
     .getUserAgent()
     .replace(/\s*Electron\/\S+/gi, '')
     .replace(/\s*peak-browser\/\S+/gi, '');
-  peakSession.setUserAgent(cleanUA);
+  targetSession.setUserAgent(cleanUA);
 
-  registerPeakProtocolOnSession(peakSession);
-  registerPeakProtocolOnSession(session.defaultSession);
+  registerPeakProtocolOnSession(targetSession);
 
-  peakSession.webRequest.onBeforeRequest((details, callback) => {
+  targetSession.webRequest.onBeforeRequest((details, callback) => {
     const rawUrl = details.url || '';
     if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
       callback({ cancel: false });
@@ -1130,7 +1163,7 @@ function setupSession() {
     callback({ cancel: false });
   });
 
-  peakSession.webRequest.onBeforeSendHeaders((details, callback) => {
+  targetSession.webRequest.onBeforeSendHeaders((details, callback) => {
     const settings = store.getSettings();
     const rawUrl = details.url || '';
     if (!settings.privacyHeaders || (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://'))) {
@@ -1169,7 +1202,7 @@ function setupSession() {
     callback({ requestHeaders: headers });
   });
 
-  peakSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+  targetSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
     if (permission === 'fullscreen' || permission === 'pointerLock' || permission === 'clipboard-sanitized-write') {
       callback(true);
       return;
@@ -1205,50 +1238,61 @@ function setupSession() {
     callback(false);
   });
 
-  peakSession.on('will-download', (_event, item) => {
-    const id = `dl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-    activeDownloadItems.set(id, item);
+  if (!isIncognito) {
+    targetSession.on('will-download', (_event, item) => {
+      const id = `dl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+      activeDownloadItems.set(id, item);
 
-    const record = {
-      id,
-      filename: item.getFilename(),
-      url: item.getURL(),
-      savePath: item.getSavePath(),
-      totalBytes: item.getTotalBytes(),
-      receivedBytes: 0,
-      state: 'progressing',
-      startedAt: Date.now()
-    };
-
-    const upsertDownload = (patch) => {
-      Object.assign(record, patch);
-      const list = store.getDownloads().filter((d) => d.id !== id);
-      list.unshift({ ...record });
-      store.saveDownloads(list);
-      broadcastData();
-    };
-
-    upsertDownload({});
-
-    item.on('updated', (_ev, state) => {
-      upsertDownload({
+      const record = {
+        id,
+        filename: item.getFilename(),
+        url: item.getURL(),
         savePath: item.getSavePath(),
         totalBytes: item.getTotalBytes(),
-        receivedBytes: item.getReceivedBytes(),
-        state: state === 'interrupted' ? 'interrupted' : 'progressing'
-      });
-    });
+        receivedBytes: 0,
+        state: 'progressing',
+        startedAt: Date.now()
+      };
 
-    item.once('done', (_ev, state) => {
-      activeDownloadItems.delete(id);
-      upsertDownload({
-        savePath: item.getSavePath(),
-        totalBytes: item.getTotalBytes(),
-        receivedBytes: item.getReceivedBytes(),
-        state
+      const upsertDownload = (patch) => {
+        Object.assign(record, patch);
+        const list = store.getDownloads().filter((d) => d.id !== id);
+        list.unshift({ ...record });
+        store.saveDownloads(list);
+        broadcastData();
+      };
+
+      upsertDownload({});
+
+      item.on('updated', (_ev, state) => {
+        upsertDownload({
+          savePath: item.getSavePath(),
+          totalBytes: item.getTotalBytes(),
+          receivedBytes: item.getReceivedBytes(),
+          state: state === 'interrupted' ? 'interrupted' : 'progressing'
+        });
+      });
+
+      item.once('done', (_ev, state) => {
+        activeDownloadItems.delete(id);
+        upsertDownload({
+          savePath: item.getSavePath(),
+          totalBytes: item.getTotalBytes(),
+          receivedBytes: item.getReceivedBytes(),
+          state
+        });
       });
     });
-  });
+  }
+}
+
+function setupSession() {
+  peakSession = session.fromPartition('persist:peak');
+  incognitoSession = session.fromPartition('peak-incognito');
+
+  registerPeakProtocolOnSession(session.defaultSession);
+  configureSessionProtections(peakSession, { isIncognito: false });
+  configureSessionProtections(incognitoSession, { isIncognito: true });
 }
 
 function assertPeakSender(event) {
@@ -1311,6 +1355,11 @@ function registerIpcHandlers() {
     return tab.id;
   });
 
+  ipcMain.handle('tabs:new-incognito', (_event, url) => {
+    const tab = createTab(url || INCOGNITO_URL, true, { incognito: true });
+    return tab.id;
+  });
+
   ipcMain.handle('tabs:close', (_event, tabId) => {
     closeTab(tabId);
   });
@@ -1363,7 +1412,7 @@ function registerIpcHandlers() {
     const tab = getActiveTab();
     if (tab && !tab.view.webContents.isDestroyed()) {
       tab.errorTargetUrl = null;
-      tab.view.webContents.loadURL(NEWTAB_URL);
+      tab.view.webContents.loadURL(tab.isIncognito ? INCOGNITO_URL : NEWTAB_URL);
     }
   });
   ipcMain.handle('nav:zoom', (_event, direction) => zoomActiveTab(direction));
@@ -1557,12 +1606,59 @@ function registerIpcHandlers() {
     }
     if (options.cookies) {
       await peakSession.clearStorageData();
+      if (incognitoSession) await incognitoSession.clearStorageData();
     }
     if (options.cache) {
       await peakSession.clearCache();
+      if (incognitoSession) await incognitoSession.clearCache();
     }
     broadcastData();
     return { ok: true };
+  });
+
+  ipcMain.handle('settings-page:detect-browsers', (event) => {
+    assertPeakSender(event);
+    return importer.detectBrowsers();
+  });
+
+  ipcMain.handle('settings-page:import-browser', (event, payload = {}) => {
+    assertPeakSender(event);
+    const result = importer.importFromSource(
+      payload.sourceId,
+      {
+        bookmarks: payload.bookmarks !== false,
+        history: payload.history !== false,
+        speedDial: Boolean(payload.speedDial)
+      },
+      store
+    );
+    if (result.ok) {
+      broadcastData();
+    }
+    return result;
+  });
+
+  ipcMain.handle('settings-page:import-html', async (event) => {
+    assertPeakSender(event);
+    const picked = await dialog.showOpenDialog(mainWindow, {
+      title: 'Importuj zakładki z pliku HTML',
+      filters: [{ name: 'Pliki zakładek HTML', extensions: ['html', 'htm'] }],
+      properties: ['openFile']
+    });
+    if (picked.canceled || !picked.filePaths || picked.filePaths.length === 0) {
+      return { ok: false, canceled: true };
+    }
+    const result = importer.importFromHtmlFile(picked.filePaths[0], store, { speedDial: false });
+    if (result.ok) {
+      broadcastData();
+    }
+    return result;
+  });
+
+  ipcMain.handle('settings-page:open-incognito', (event) => {
+    assertPeakSender(event);
+    const tab = createTab(INCOGNITO_URL, true, { incognito: true });
+    return tab.id;
   });
 
   ipcMain.handle('settings-page:open-devtools', (event) => {
@@ -1793,6 +1889,60 @@ async function runVerificationSuite(verifyDir) {
   assert.strictEqual(reloadedStore.isBookmarked('https://example.com'), true);
   assert.strictEqual(reloadedStore.getHistory().length, 1);
 
+  // Unit assertions for importer.js (Chromium Bookmarks + SQLite History + HTML)
+  const { DatabaseSync } = require('node:sqlite');
+  const mockProfileDir = path.join(verifyDir, 'mock-chrome-profile');
+  fs.rmSync(mockProfileDir, { recursive: true, force: true });
+  fs.mkdirSync(mockProfileDir, { recursive: true });
+
+  fs.writeFileSync(
+    path.join(mockProfileDir, 'Bookmarks'),
+    JSON.stringify({
+      roots: {
+        bookmark_bar: {
+          type: 'folder',
+          children: [
+            { type: 'url', name: 'PEAK LABS', url: 'https://peaklabstudio.vercel.app/#o-firmie', date_added: '13370000000000000' },
+            { type: 'url', name: 'GitHub', url: 'https://github.com/latajoncy82-svg', date_added: '13370000000000000' },
+            { type: 'url', name: 'ChromeInternal', url: 'chrome://settings' }
+          ]
+        }
+      }
+    })
+  );
+
+  const histDbPath = path.join(mockProfileDir, 'History');
+  const mockDb = new DatabaseSync(histDbPath);
+  mockDb.exec('CREATE TABLE urls (id INTEGER PRIMARY KEY, url TEXT, title TEXT, last_visit_time INTEGER);');
+  mockDb
+    .prepare('INSERT INTO urls (url, title, last_visit_time) VALUES (?, ?, ?)')
+    .run('https://peakbrowser.vercel.app/', 'Peak Browser', 13370000000000000);
+  mockDb.close();
+
+  const htmlBmPath = path.join(verifyDir, 'mock-bookmarks.html');
+  fs.writeFileSync(
+    htmlBmPath,
+    '<DL><p><DT><A HREF="https://peakbrowser.vercel.app/#telefon">Peak na telefon</A><DT><A HREF="https://github.com/latajoncy82-svg">GitHub</A></DL>'
+  );
+
+  const importStoreDir = path.join(verifyDir, 'unit-import-store');
+  fs.rmSync(importStoreDir, { recursive: true, force: true });
+  const importTestStore = new store.PeakStore().init(importStoreDir);
+  const srcRes = importer.importFromSource(
+    { id: 'mock:chrome', browserName: 'Google Chrome', label: 'Google Chrome (Mock)', type: 'chromium', profileDir: mockProfileDir },
+    { bookmarks: true, history: true, speedDial: true },
+    importTestStore
+  );
+  assert.strictEqual(srcRes.ok, true);
+  assert.strictEqual(srcRes.bookmarksAdded, 2);
+  assert.strictEqual(srcRes.historyAdded, 1);
+  assert.strictEqual(srcRes.speedDialAdded, 2);
+
+  const dupRes = importer.importFromHtmlFile(htmlBmPath, importTestStore, { speedDial: false });
+  assert.strictEqual(dupRes.ok, true);
+  assert.strictEqual(dupRes.bookmarksAdded, 1, 'HTML import should add 1 new and deduplicate existing GitHub URL');
+  assert.strictEqual(dupRes.bookmarksSkipped, 1);
+
   const capturePair = async (name) => {
     const active = getActiveTab();
     const bounds = mainWindow.getContentBounds();
@@ -1869,9 +2019,66 @@ async function runVerificationSuite(verifyDir) {
   assert.ok(verifyChromeState.rulesBadge.length > 0, 'Shield drawer should show active rules count');
 
   await capturePair('4-shield-drawer');
+
+  // Close drawer cleanly before Incognito & Settings Import checks
+  await mainWindow.webContents.executeJavaScript(`
+    document.getElementById('drawer-close')?.click();
+  `);
+  await new Promise((r) => setTimeout(r, 200));
+
+  // 5. Incognito tab & zero-history isolation test
+  store.clearHistory();
+  const incTab = createTab(INCOGNITO_URL, true, { incognito: true });
+  await waitForTabLoad(incTab);
+  await new Promise((r) => setTimeout(r, 350));
+  assert.strictEqual(incTab.isIncognito, true, 'Created incognito tab must set isIncognito=true');
+  const incognitoPillVisible = await mainWindow.webContents.executeJavaScript(`
+    !document.getElementById('incognito-pill')?.classList.contains('hidden')
+  `);
+  assert.strictEqual(incognitoPillVisible, true, 'Omnibox Incognito pill must be visible');
+  await capturePair('5-incognito-tab');
+
+  incTab.view.webContents.loadURL('https://example.com/?peak_incognito_check=1');
+  await waitForTabLoad(incTab);
+  assert.strictEqual(
+    store.getHistory().length,
+    0,
+    'Incognito navigation must never record entries into persistent history'
+  );
+  closeTab(incTab.id);
+
+  // 6. Full-page Settings #import section
+  openSettingsTab('#import');
+  await new Promise((r) => setTimeout(r, 350));
+  const importSettingsTab = getActiveTab();
+  await waitForTabLoad(importSettingsTab);
+  await importSettingsTab.view.webContents.executeJavaScript(`
+    document.getElementById('import')?.scrollIntoView({ behavior: 'instant', block: 'start' });
+    document.querySelector('[data-section="import"]')?.click();
+  `);
+  await new Promise((r) => setTimeout(r, 500));
+  const importSelectCount = await importSettingsTab.view.webContents.executeJavaScript(`
+    document.getElementById('import-browser-select')?.options?.length || 0
+  `);
+  assert.ok(importSelectCount >= 1, 'Import browser select should render at least 1 option');
+  await capturePair('6-settings-import');
+
   fs.writeFileSync(
     path.join(verifyDir, 'summary.json'),
-    JSON.stringify({ ok: true, startupUrl, startupTitle, verifyChromeState, shieldInfo: shield.getShieldInfo() }, null, 2)
+    JSON.stringify(
+      {
+        ok: true,
+        startupUrl,
+        startupTitle,
+        verifyChromeState,
+        importerTest: srcRes,
+        incognitoZeroHistory: true,
+        importSelectCount,
+        shieldInfo: shield.getShieldInfo()
+      },
+      null,
+      2
+    )
   );
 }
 

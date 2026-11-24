@@ -27,6 +27,10 @@
     removeAllowlistHost: (host) => ipcRenderer.invoke('settings-page:allowlist-remove', host),
     updateFilterLists: () => ipcRenderer.invoke('settings-page:update-filters'),
     clearData: (options) => ipcRenderer.invoke('settings-page:clear-data', options),
+    detectBrowsers: () => ipcRenderer.invoke('settings-page:detect-browsers'),
+    importBrowser: (payload) => ipcRenderer.invoke('settings-page:import-browser', payload),
+    importHtmlBookmarks: () => ipcRenderer.invoke('settings-page:import-html'),
+    openIncognito: () => ipcRenderer.invoke('settings-page:open-incognito'),
     openDevTools: () => ipcRenderer.invoke('settings-page:open-devtools'),
     openExternal: (url) => ipcRenderer.invoke('settings-page:open-external', url),
     onStateUpdate: (callback) => subscribe('settings:state-updated', callback)

@@ -20,6 +20,7 @@ function mapGithubRelease(release) {
     exeAssets.find((a) => !/portable/i.test(a.name)) ||
     null;
   const portable = exeAssets.find((a) => /portable/i.test(a.name)) || null;
+  const android = rawAssets.find((a) => /\.apk$/i.test(a.name)) || null;
 
   return {
     tag: release.tag_name,
@@ -31,6 +32,7 @@ function mapGithubRelease(release) {
     assets: {
       installer,
       portable,
+      android,
       all: rawAssets
     }
   };

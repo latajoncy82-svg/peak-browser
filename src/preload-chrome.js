@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('peak', {
   // Tabs & navigation
   getInitialState: () => ipcRenderer.invoke('tabs:get-state'),
   newTab: (url) => ipcRenderer.invoke('tabs:new', url),
+  newIncognitoTab: (url) => ipcRenderer.invoke('tabs:new-incognito', url),
   closeTab: (tabId) => ipcRenderer.invoke('tabs:close', tabId),
   activateTab: (tabId) => ipcRenderer.invoke('tabs:activate', tabId),
   reorderTabs: (fromId, toId) => ipcRenderer.invoke('tabs:reorder', { fromId, toId }),

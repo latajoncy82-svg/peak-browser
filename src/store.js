@@ -412,6 +412,169 @@ class PeakStore {
     return [];
   }
 
+  importBookmarks(items = []) {
+    if (!Array.isArray(items) || items.length === 0) {
+      return { added: 0, skipped: 0, total: this.state.bookmarks.length };
+    }
+    const existingUrls = new Set(this.state.bookmarks.map((b) => b.url));
+    const newlyAdded = [];
+    let skipped = 0;
+
+    for (const raw of items) {
+      if (!raw || typeof raw.url !== 'string') continue;
+      const url = raw.url.trim();
+      if (!/^https?:\/\//i.test(url)) continue;
+      if (existingUrls.has(url)) {
+        skipped += 1;
+        continue;
+      }
+      existingUrls.add(url);
+      let cleanTitle = typeof raw.title === 'string' ? raw.title.trim() : '';
+      if (!cleanTitle) {
+        try {
+          cleanTitle = new URL(url).hostname || url;
+        } catch {
+          cleanTitle = url;
+        }
+      }
+      newlyAdded.push({
+        id: makeId('bm'),
+        title: cleanTitle,
+        url,
+        favicon: typeof raw.favicon === 'string' ? raw.favicon : '',
+        createdAt:
+          typeof raw.createdAt === 'number' && Number.isFinite(raw.createdAt) && raw.createdAt > 0
+            ? raw.createdAt
+            : Date.now()
+      });
+    }
+
+    if (newlyAdded.length > 0) {
+      this.state.bookmarks = [...newlyAdded, ...this.state.bookmarks];
+      this._scheduleSave();
+    }
+    return {
+      added: newlyAdded.length,
+      skipped,
+      total: this.state.bookmarks.length
+    };
+  }
+
+  importHistory(items = []) {
+    if (!Array.isArray(items) || items.length === 0) {
+      return { added: 0, skipped: 0, total: this.state.history.length };
+    }
+    const byUrl = new Map();
+    for (const existing of this.state.history) {
+      if (existing && existing.url && !byUrl.has(existing.url)) {
+        byUrl.set(existing.url, { ...existing });
+      }
+    }
+
+    let added = 0;
+    let skipped = 0;
+    let changed = false;
+
+    for (const raw of items) {
+      if (!raw || typeof raw.url !== 'string') continue;
+      const url = raw.url.trim();
+      if (!/^https?:\/\//i.test(url)) continue;
+
+      let cleanTitle = typeof raw.title === 'string' ? raw.title.trim() : '';
+      if (!cleanTitle) {
+        try {
+          cleanTitle = new URL(url).hostname || url;
+        } catch {
+          cleanTitle = url;
+        }
+      }
+      const visitedAt =
+        typeof raw.visitedAt === 'number' && Number.isFinite(raw.visitedAt) && raw.visitedAt > 0
+          ? raw.visitedAt
+          : Date.now();
+
+      const existing = byUrl.get(url);
+      if (existing) {
+        skipped += 1;
+        if (visitedAt > (existing.visitedAt || 0)) {
+          existing.visitedAt = visitedAt;
+          if (cleanTitle) existing.title = cleanTitle;
+          changed = true;
+        } else if ((!existing.title || existing.title === existing.url) && cleanTitle) {
+          existing.title = cleanTitle;
+          changed = true;
+        }
+      } else {
+        added += 1;
+        changed = true;
+        byUrl.set(url, {
+          id: makeId('hi'),
+          url,
+          title: cleanTitle,
+          visitedAt
+        });
+      }
+    }
+
+    if (changed) {
+      const merged = Array.from(byUrl.values()).sort((a, b) => (b.visitedAt || 0) - (a.visitedAt || 0));
+      if (merged.length > MAX_HISTORY) {
+        merged.length = MAX_HISTORY;
+      }
+      this.state.history = merged;
+      this._scheduleSave();
+    }
+
+    return {
+      added,
+      skipped,
+      total: this.state.history.length
+    };
+  }
+
+  importSpeedDial(items = [], maxAdd = 4) {
+    if (!Array.isArray(items) || items.length === 0) {
+      return { added: 0, total: this.state.speedDial.length };
+    }
+    const maxSlots = 10;
+    const existingUrls = new Set(this.state.speedDial.map((item) => item.url));
+    let added = 0;
+
+    for (const raw of items) {
+      if (added >= maxAdd || this.state.speedDial.length >= maxSlots) break;
+      if (!raw || typeof raw.url !== 'string') continue;
+      const url = raw.url.trim();
+      if (!/^https?:\/\//i.test(url) || existingUrls.has(url)) continue;
+
+      let cleanTitle = typeof raw.title === 'string' ? raw.title.trim() : '';
+      if (!cleanTitle) {
+        try {
+          cleanTitle = new URL(url).hostname.replace(/^www\./, '') || url;
+        } catch {
+          cleanTitle = url;
+        }
+      }
+      if (cleanTitle.length > 32) {
+        cleanTitle = cleanTitle.slice(0, 32).trim();
+      }
+      existingUrls.add(url);
+      this.state.speedDial.push({
+        id: makeId('sd'),
+        title: cleanTitle,
+        url
+      });
+      added += 1;
+    }
+
+    if (added > 0) {
+      this._scheduleSave();
+    }
+    return {
+      added,
+      total: this.state.speedDial.length
+    };
+  }
+
   getSpeedDial() {
     return this.state.speedDial.map((item) => ({ ...item }));
   }
